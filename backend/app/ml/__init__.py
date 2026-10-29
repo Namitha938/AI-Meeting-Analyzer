@@ -4,7 +4,7 @@ Submodules:
 - transcribe / transcription: Whisper Speech-to-Text with timestamp alignment
 - diarize / diarization: pyannote.audio speaker separation and timestamp-overlap merging
 - classifier: Custom trained hybrid model & rule-based intent classifier
-- extraction: Named Entity Recognition & rule-based action/decision extraction
+- extract / extraction: spaCy NER owner matching & dateparser deadline extraction
 - summarizer: Executive summary generation with takeaways & next steps
 - analytics: Talk-time distribution, sentiment scoring, and topic chapters
 - pipeline: End-to-end composite ML workflow
@@ -15,6 +15,7 @@ from app.ml.transcription import transcribe_audio
 from app.ml.diarize import diarize, merge_speaker_turns
 from app.ml.diarization import diarize_audio, merge_transcripts
 from app.ml.classifier import predict, predict_one, classify_sentence, classify_batch, load_model
+from app.ml.extract import extract_action_item, extract_actions
 from app.ml.extraction import extract_action_items, extract_decisions
 from app.ml.summarizer import generate_summary
 from app.ml.analytics import compute_analytics
@@ -32,6 +33,8 @@ __all__ = [
     "load_model",
     "classify_sentence",
     "classify_batch",
+    "extract_action_item",
+    "extract_actions",
     "extract_action_items",
     "extract_decisions",
     "generate_summary",

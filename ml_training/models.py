@@ -120,3 +120,4 @@ class TransformerIntentClassifier(TfidfBaselineClassifier):
         # Add bigram features to simulate transformer self-attention over adjacent tokens
         bigrams = [f"{tokens[i]}_{tokens[i+1]}" for i in range(len(tokens) - 1)]
         return tokens + bigrams
+

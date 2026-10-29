@@ -120,3 +120,4 @@ def get_training_and_validation(val_ratio: float = 0.2) -> Tuple[List[Tuple[str,
 def get_ami_external_test() -> List[Tuple[str, str]]:
     """Returns the AMI Meeting Corpus external evaluation set."""
     return list(AMI_EXTERNAL_TEST_DATA)
+
