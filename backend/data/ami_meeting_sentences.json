@@ -1,0 +1,362 @@
+[
+  {
+    "text": "I will prepare the API documentation and share the versioned swagger specs by Monday morning.",
+    "label": "action_item"
+  },
+  {
+    "text": "Sarah, please review the mobile onboarding flows before our sprint demo on Friday.",
+    "label": "action_item"
+  },
+  {
+    "text": "Let's make sure the onboarding flow and mobile UX are ready for beta testing by Friday.",
+    "label": "action_item"
+  },
+  {
+    "text": "I'll schedule 5 customer beta interviews once Marcus shares the API docs.",
+    "label": "action_item"
+  },
+  {
+    "text": "Devin needs to fix the socket timeout issue in the transcription pipeline by tomorrow.",
+    "label": "action_item"
+  },
+  {
+    "text": "I can take responsibility for setting up the Redis worker on staging by Wednesday.",
+    "label": "action_item"
+  },
+  {
+    "text": "We need to draft the follow-up email and send it to attendees before 5 PM today.",
+    "label": "action_item"
+  },
+  {
+    "text": "Marcus will optimize the database queries for the meeting analytics dashboard by next week.",
+    "label": "action_item"
+  },
+  {
+    "text": "Please create a ticket for the PostgreSQL migration and assign it to the infrastructure team.",
+    "label": "action_item"
+  },
+  {
+    "text": "I'll follow up with the legal department regarding the enterprise data privacy terms.",
+    "label": "action_item"
+  },
+  {
+    "text": "Let's update the deployment documentation with the new environment variables by end of day.",
+    "label": "action_item"
+  },
+  {
+    "text": "Jordan will coordinate with marketing to prepare the launch blog post by Thursday.",
+    "label": "action_item"
+  },
+  {
+    "text": "I will benchmark the latency between Whisper and Faster-Whisper on CPU by tomorrow.",
+    "label": "action_item"
+  },
+  {
+    "text": "Can you send over the revised pricing deck to the Acme client before tomorrow noon?",
+    "label": "action_item"
+  },
+  {
+    "text": "We must run the unit test suite on all auth endpoints prior to merging this PR.",
+    "label": "action_item"
+  },
+  {
+    "text": "I'm going to configure the Celery Beat scheduled tasks for daily email digests.",
+    "label": "action_item"
+  },
+  {
+    "text": "Rachel will compile the user feedback summary from the pilot cohort by next Tuesday.",
+    "label": "action_item"
+  },
+  {
+    "text": "Let's add the Google OAuth redirect URI to our Firebase console settings by this afternoon.",
+    "label": "action_item"
+  },
+  {
+    "text": "I will export the weekly meeting metrics and present them during the executive review.",
+    "label": "action_item"
+  },
+  {
+    "text": "Devin, please check the logs for any failed speech-to-text jobs over the weekend.",
+    "label": "action_item"
+  },
+  {
+    "text": "I'll draft a pull request to remove redundant dependencies from our virtualenv.",
+    "label": "action_item"
+  },
+  {
+    "text": "We should verify that all action items are marked as pending before assigning owners.",
+    "label": "action_item"
+  },
+  {
+    "text": "I will reach out to Stripe support regarding the custom webhook signature validation.",
+    "label": "action_item"
+  },
+  {
+    "text": "Marcus is going to implement the speaker renaming PATCH endpoint by tomorrow.",
+    "label": "action_item"
+  },
+  {
+    "text": "Please verify the SSL certificates for the production domain before the cutover on Saturday.",
+    "label": "action_item"
+  },
+  {
+    "text": "We agreed to postpone the public beta rollout to Q3 to polish mobile onboarding.",
+    "label": "decision"
+  },
+  {
+    "text": "The decision is to use PostgreSQL as our primary database with SQLite local fallback.",
+    "label": "decision"
+  },
+  {
+    "text": "We reached consensus that Cloudinary will be our default audio and video storage provider.",
+    "label": "decision"
+  },
+  {
+    "text": "We have decided to drop support for Python 3.9 and target Python 3.11 going forward.",
+    "label": "decision"
+  },
+  {
+    "text": "The team voted to implement DistilBERT as our core sentence classifier instead of BERT-large.",
+    "label": "decision"
+  },
+  {
+    "text": "We concluded that 16kHz mono WAV is the standard format required for all audio ingestion.",
+    "label": "decision"
+  },
+  {
+    "text": "It was finalized that JWT access tokens will have a 7-day expiration for mobile convenience.",
+    "label": "decision"
+  },
+  {
+    "text": "We agreed to adopt Tailwind CSS v4 for all future frontend component styling.",
+    "label": "decision"
+  },
+  {
+    "text": "The consensus is to require two-factor authentication for all enterprise tier accounts.",
+    "label": "decision"
+  },
+  {
+    "text": "We decided to proceed with the annual enterprise subscription model rather than per-seat usage.",
+    "label": "decision"
+  },
+  {
+    "text": "It's decided that we will not use third-party tracking scripts on user meeting transcripts.",
+    "label": "decision"
+  },
+  {
+    "text": "We agreed on a 250MB maximum audio file upload limit to balance bandwidth and memory.",
+    "label": "decision"
+  },
+  {
+    "text": "The leadership team confirmed that remote-first collaboration will remain our permanent policy.",
+    "label": "decision"
+  },
+  {
+    "text": "We reached an agreement to prioritize semantic vector search over basic keyword matching.",
+    "label": "decision"
+  },
+  {
+    "text": "It was decided that Sarah will lead the customer research pod starting next sprint.",
+    "label": "decision"
+  },
+  {
+    "text": "We finalized the decision to use Redis for task message queuing rather than RabbitMQ.",
+    "label": "decision"
+  },
+  {
+    "text": "The agreement is to keep the free tier limited to 3 meeting uploads per month.",
+    "label": "decision"
+  },
+  {
+    "text": "We agreed that all user action items must require both an assignee and a target deadline.",
+    "label": "decision"
+  },
+  {
+    "text": "It is decided that the dark mode theme will follow the user's OS system preferences by default.",
+    "label": "decision"
+  },
+  {
+    "text": "The team settled on using FAISS for low-latency local in-memory vector indexing.",
+    "label": "decision"
+  },
+  {
+    "text": "What is our projected cloud hosting cost when we reach 10,000 active meeting uploads?",
+    "label": "question"
+  },
+  {
+    "text": "Who is currently assigned to investigate the speaker diarization overlap error?",
+    "label": "question"
+  },
+  {
+    "text": "Can anyone confirm whether the PostgreSQL container includes the pgvector extension?",
+    "label": "question"
+  },
+  {
+    "text": "How long does Whisper typically take to transcribe a 45-minute audio recording on CPU?",
+    "label": "question"
+  },
+  {
+    "text": "Do we have sufficient test coverage across the JWT authentication and refresh endpoints?",
+    "label": "question"
+  },
+  {
+    "text": "What are the primary differences between DistilBERT and RoBERTa for text classification?",
+    "label": "question"
+  },
+  {
+    "text": "Has the legal team finished reviewing our customer data retention and compliance policies?",
+    "label": "question"
+  },
+  {
+    "text": "Could you clarify which team member is responsible for the weekly email digest automation?",
+    "label": "question"
+  },
+  {
+    "text": "Are we planning to support live real-time microphone recording directly in the browser?",
+    "label": "question"
+  },
+  {
+    "text": "How does the system handle meetings where two participants speak simultaneously?",
+    "label": "question"
+  },
+  {
+    "text": "Is there any rate limiting applied to the public login and user registration endpoints?",
+    "label": "question"
+  },
+  {
+    "text": "What metrics are we using to evaluate precision and recall on the AMI dataset?",
+    "label": "question"
+  },
+  {
+    "text": "Did we get sign-off from the product VP on the revised navigation wireframes?",
+    "label": "question"
+  },
+  {
+    "text": "Can users export the extracted meeting action items directly into Jira or Asana?",
+    "label": "question"
+  },
+  {
+    "text": "Where are the Cloudinary API keys and upload presets stored in the environment config?",
+    "label": "question"
+  },
+  {
+    "text": "Does anyone have objection to deprecating the legacy XML export format next week?",
+    "label": "question"
+  },
+  {
+    "text": "How many beta customers have signed up for the early preview program so far?",
+    "label": "question"
+  },
+  {
+    "text": "Why did the background Celery worker disconnect from Redis during yesterday's stress test?",
+    "label": "question"
+  },
+  {
+    "text": "Should we allow participants to rename Speaker 1 directly inside the transcript viewer?",
+    "label": "question"
+  },
+  {
+    "text": "What is the fallback mechanism when a user's browser blocks Google OAuth popup windows?",
+    "label": "question"
+  },
+  {
+    "text": "Good morning everyone, thanks for joining today's product sync on time.",
+    "label": "general"
+  },
+  {
+    "text": "I hope everyone had a great weekend and is ready for the sprint planning.",
+    "label": "general"
+  },
+  {
+    "text": "That makes a lot of sense based on what we saw in the analytics dashboard last week.",
+    "label": "general"
+  },
+  {
+    "text": "I was looking at the recent telemetry data and noticed some interesting patterns.",
+    "label": "general"
+  },
+  {
+    "text": "Let's give everyone another minute to jump on the call before we get started.",
+    "label": "general"
+  },
+  {
+    "text": "Yeah, exactly. I completely agree with what Devin mentioned a moment ago.",
+    "label": "general"
+  },
+  {
+    "text": "The weather has been surprisingly warm around here over the past couple of days.",
+    "label": "general"
+  },
+  {
+    "text": "Let me share my screen so we can all look at the user journey diagram together.",
+    "label": "general"
+  },
+  {
+    "text": "Thanks for the detailed walkthrough, that clarifies a lot of the background architecture.",
+    "label": "general"
+  },
+  {
+    "text": "Can everybody see the slides currently displayed on the presentation window?",
+    "label": "general"
+  },
+  {
+    "text": "We have about ten minutes left in today's scheduled slot, so let's keep moving.",
+    "label": "general"
+  },
+  {
+    "text": "That was an insightful discussion around user engagement and retention benchmarks.",
+    "label": "general"
+  },
+  {
+    "text": "Sorry about that, my microphone was momentarily on mute while I was talking.",
+    "label": "general"
+  },
+  {
+    "text": "It's always great to see cross-functional alignment between engineering and product design.",
+    "label": "general"
+  },
+  {
+    "text": "Let's wrap up today's conversation and let everyone get back to their focus blocks.",
+    "label": "general"
+  },
+  {
+    "text": "I'll take some brief notes in the shared document as we talk through the agenda.",
+    "label": "general"
+  },
+  {
+    "text": "Sounds good. Thank you all for your time and thoughtful contributions today.",
+    "label": "general"
+  },
+  {
+    "text": "Alright, that covers everything on the agenda for this morning's standup meeting.",
+    "label": "general"
+  },
+  {
+    "text": "Have a productive afternoon everyone, talk to you all tomorrow morning.",
+    "label": "general"
+  },
+  {
+    "text": "Great, let's switch gears and look at the customer support tickets from this week.",
+    "label": "general"
+  },
+  {
+    "text": "I think we are in a strong position heading into the upcoming product demonstration.",
+    "label": "general"
+  },
+  {
+    "text": "No problem at all, happy to provide additional context whenever you need it.",
+    "label": "general"
+  },
+  {
+    "text": "Let's pause right here to make sure there are no other miscellaneous topics to cover.",
+    "label": "general"
+  },
+  {
+    "text": "Everything looks very clean and well-structured from an architectural standpoint.",
+    "label": "general"
+  },
+  {
+    "text": "Thanks everyone, speak to you soon!",
+    "label": "general"
+  }
+]

@@ -1,8 +1,8 @@
+# Node & Frontend
 node_modules/
 dist/
 build/
 .cache/
-.env*
 .vite/
 vite.config.*.timestamp-*
 *.tsbuildinfo
@@ -15,10 +15,39 @@ logs/
 /.plugins/
 /.opencode-skills/
 
-# Backend and database
-docker-compose.yml
-backend/
+# Python & Backend Virtual Environments
+venv/
+backend/venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Python cache & artifacts
+__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+*/*/*/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Databases
 meetora.db
+backend/meetora.db
 *.db
 *.sqlite3
 
+# Uploads & Media
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Environment & Secrets (Keep .env.example tracked)
+.env
+.env.local
+backend/.env
+!.env.example
+!backend/.env.example

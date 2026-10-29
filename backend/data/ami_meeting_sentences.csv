@@ -1,0 +1,91 @@
+text,label
+I will prepare the API documentation and share the versioned swagger specs by Monday morning.,action_item
+"Sarah, please review the mobile onboarding flows before our sprint demo on Friday.",action_item
+Let's make sure the onboarding flow and mobile UX are ready for beta testing by Friday.,action_item
+I'll schedule 5 customer beta interviews once Marcus shares the API docs.,action_item
+Devin needs to fix the socket timeout issue in the transcription pipeline by tomorrow.,action_item
+I can take responsibility for setting up the Redis worker on staging by Wednesday.,action_item
+We need to draft the follow-up email and send it to attendees before 5 PM today.,action_item
+Marcus will optimize the database queries for the meeting analytics dashboard by next week.,action_item
+Please create a ticket for the PostgreSQL migration and assign it to the infrastructure team.,action_item
+I'll follow up with the legal department regarding the enterprise data privacy terms.,action_item
+Let's update the deployment documentation with the new environment variables by end of day.,action_item
+Jordan will coordinate with marketing to prepare the launch blog post by Thursday.,action_item
+I will benchmark the latency between Whisper and Faster-Whisper on CPU by tomorrow.,action_item
+Can you send over the revised pricing deck to the Acme client before tomorrow noon?,action_item
+We must run the unit test suite on all auth endpoints prior to merging this PR.,action_item
+I'm going to configure the Celery Beat scheduled tasks for daily email digests.,action_item
+Rachel will compile the user feedback summary from the pilot cohort by next Tuesday.,action_item
+Let's add the Google OAuth redirect URI to our Firebase console settings by this afternoon.,action_item
+I will export the weekly meeting metrics and present them during the executive review.,action_item
+"Devin, please check the logs for any failed speech-to-text jobs over the weekend.",action_item
+I'll draft a pull request to remove redundant dependencies from our virtualenv.,action_item
+We should verify that all action items are marked as pending before assigning owners.,action_item
+I will reach out to Stripe support regarding the custom webhook signature validation.,action_item
+Marcus is going to implement the speaker renaming PATCH endpoint by tomorrow.,action_item
+Please verify the SSL certificates for the production domain before the cutover on Saturday.,action_item
+We agreed to postpone the public beta rollout to Q3 to polish mobile onboarding.,decision
+The decision is to use PostgreSQL as our primary database with SQLite local fallback.,decision
+We reached consensus that Cloudinary will be our default audio and video storage provider.,decision
+We have decided to drop support for Python 3.9 and target Python 3.11 going forward.,decision
+The team voted to implement DistilBERT as our core sentence classifier instead of BERT-large.,decision
+We concluded that 16kHz mono WAV is the standard format required for all audio ingestion.,decision
+It was finalized that JWT access tokens will have a 7-day expiration for mobile convenience.,decision
+We agreed to adopt Tailwind CSS v4 for all future frontend component styling.,decision
+The consensus is to require two-factor authentication for all enterprise tier accounts.,decision
+We decided to proceed with the annual enterprise subscription model rather than per-seat usage.,decision
+It's decided that we will not use third-party tracking scripts on user meeting transcripts.,decision
+We agreed on a 250MB maximum audio file upload limit to balance bandwidth and memory.,decision
+The leadership team confirmed that remote-first collaboration will remain our permanent policy.,decision
+We reached an agreement to prioritize semantic vector search over basic keyword matching.,decision
+It was decided that Sarah will lead the customer research pod starting next sprint.,decision
+We finalized the decision to use Redis for task message queuing rather than RabbitMQ.,decision
+The agreement is to keep the free tier limited to 3 meeting uploads per month.,decision
+We agreed that all user action items must require both an assignee and a target deadline.,decision
+It is decided that the dark mode theme will follow the user's OS system preferences by default.,decision
+The team settled on using FAISS for low-latency local in-memory vector indexing.,decision
+"What is our projected cloud hosting cost when we reach 10,000 active meeting uploads?",question
+Who is currently assigned to investigate the speaker diarization overlap error?,question
+Can anyone confirm whether the PostgreSQL container includes the pgvector extension?,question
+How long does Whisper typically take to transcribe a 45-minute audio recording on CPU?,question
+Do we have sufficient test coverage across the JWT authentication and refresh endpoints?,question
+What are the primary differences between DistilBERT and RoBERTa for text classification?,question
+Has the legal team finished reviewing our customer data retention and compliance policies?,question
+Could you clarify which team member is responsible for the weekly email digest automation?,question
+Are we planning to support live real-time microphone recording directly in the browser?,question
+How does the system handle meetings where two participants speak simultaneously?,question
+Is there any rate limiting applied to the public login and user registration endpoints?,question
+What metrics are we using to evaluate precision and recall on the AMI dataset?,question
+Did we get sign-off from the product VP on the revised navigation wireframes?,question
+Can users export the extracted meeting action items directly into Jira or Asana?,question
+Where are the Cloudinary API keys and upload presets stored in the environment config?,question
+Does anyone have objection to deprecating the legacy XML export format next week?,question
+How many beta customers have signed up for the early preview program so far?,question
+Why did the background Celery worker disconnect from Redis during yesterday's stress test?,question
+Should we allow participants to rename Speaker 1 directly inside the transcript viewer?,question
+What is the fallback mechanism when a user's browser blocks Google OAuth popup windows?,question
+"Good morning everyone, thanks for joining today's product sync on time.",general
+I hope everyone had a great weekend and is ready for the sprint planning.,general
+That makes a lot of sense based on what we saw in the analytics dashboard last week.,general
+I was looking at the recent telemetry data and noticed some interesting patterns.,general
+Let's give everyone another minute to jump on the call before we get started.,general
+"Yeah, exactly. I completely agree with what Devin mentioned a moment ago.",general
+The weather has been surprisingly warm around here over the past couple of days.,general
+Let me share my screen so we can all look at the user journey diagram together.,general
+"Thanks for the detailed walkthrough, that clarifies a lot of the background architecture.",general
+Can everybody see the slides currently displayed on the presentation window?,general
+"We have about ten minutes left in today's scheduled slot, so let's keep moving.",general
+That was an insightful discussion around user engagement and retention benchmarks.,general
+"Sorry about that, my microphone was momentarily on mute while I was talking.",general
+It's always great to see cross-functional alignment between engineering and product design.,general
+Let's wrap up today's conversation and let everyone get back to their focus blocks.,general
+I'll take some brief notes in the shared document as we talk through the agenda.,general
+Sounds good. Thank you all for your time and thoughtful contributions today.,general
+"Alright, that covers everything on the agenda for this morning's standup meeting.",general
+"Have a productive afternoon everyone, talk to you all tomorrow morning.",general
+"Great, let's switch gears and look at the customer support tickets from this week.",general
+I think we are in a strong position heading into the upcoming product demonstration.,general
+"No problem at all, happy to provide additional context whenever you need it.",general
+Let's pause right here to make sure there are no other miscellaneous topics to cover.,general
+Everything looks very clean and well-structured from an architectural standpoint.,general
+"Thanks everyone, speak to you soon!",general
