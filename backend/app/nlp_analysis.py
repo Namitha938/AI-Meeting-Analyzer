@@ -216,7 +216,7 @@ class MeetingSummarizer:
         
         takeaways = []
         for d in decisions[:3]:
-            takeaways.append(f"Decision: {d['decision_text']} ({d['category']})")
+            takeaways.append(f"Decision: {d['decision_text']} ({d.get('category', 'General')})")
 
         # Key discussion points
         for t in transcripts:

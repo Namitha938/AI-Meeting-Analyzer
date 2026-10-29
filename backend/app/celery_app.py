@@ -68,19 +68,19 @@ def run_meeting_pipeline_sync(meeting_id: int):
         meeting.status = "transcribing"
         db.commit()
 
-        from app.speech_to_text import whisper_transcriber
-        from app.diarization import diarizer
+        from app.ml.transcription import transcribe_audio
+        from app.ml.diarization import diarize_audio, merge_transcripts
 
         audio_file = meeting.audio_path or "sample_audio.wav"
-        whisper_segments = whisper_transcriber.transcribe(audio_file)
+        whisper_segments = transcribe_audio(audio_file)
 
         # 2. Stage: Diarization (pyannote.audio Speaker Diarization)
         meeting.status = "diarizing"
         db.commit()
 
         known_participants = meeting.participants or ["Sarah Kim", "Marcus Lee", "Jordan Davis"]
-        diarization_intervals = diarizer.diarize(audio_file, num_speakers=max(2, len(known_participants)))
-        merged_transcripts = diarizer.merge_whisper_and_diarization(
+        diarization_intervals = diarize_audio(audio_file, num_speakers=max(2, len(known_participants)))
+        merged_transcripts = merge_transcripts(
             whisper_segments,
             diarization_intervals,
             known_participants=known_participants
