@@ -355,6 +355,50 @@ def add_comment(
         "created_at": comment.created_at,
     }
 
+@router.get("/{meeting_id}/comments", response_model=List[CommentResponse])
+def get_meeting_comments(
+    meeting_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+
+    comments = db.query(Comment).filter(Comment.meeting_id == meeting_id).order_by(Comment.created_at.asc()).all()
+    return [
+        {
+            "id": c.id,
+            "meeting_id": c.meeting_id,
+            "user_id": c.user_id,
+            "user_name": c.user.full_name if c.user else "User",
+            "text": c.text,
+            "created_at": c.created_at,
+        }
+        for c in comments
+    ]
+
+@router.post("/{meeting_id}/share")
+def share_meeting(
+    meeting_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+
+    share_token = f"share_{meeting.id}_{abs(hash(str(meeting.created_at)))}"
+    share_url = f"/meetings/{meeting.id}?token={share_token}"
+    return {
+        "status": "success",
+        "meeting_id": meeting.id,
+        "title": meeting.title,
+        "share_token": share_token,
+        "share_url": share_url,
+        "message": "Shareable meeting access URL created successfully."
+    }
+
 
 @router.post("/chat", response_model=MeetingChatResponse)
 def chat_global_rag(

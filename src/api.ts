@@ -434,6 +434,41 @@ export const meetingService = {
     return res.data
   },
 
+  async getMeetingSummary(meetingId: number) {
+    const res = await api.get(`/meetings/${meetingId}/summary`)
+    return res.data
+  },
+
+  async getMeetingActionItems(meetingId: number): Promise<ActionItemData[]> {
+    const res = await api.get(`/meetings/${meetingId}/action-items`)
+    return res.data
+  },
+
+  async getMeetingDecisions(meetingId: number) {
+    const res = await api.get(`/meetings/${meetingId}/decisions`)
+    return res.data
+  },
+
+  async getMeetingAnalytics(meetingId: number) {
+    const res = await api.get(`/meetings/${meetingId}/analytics`)
+    return res.data
+  },
+
+  async getMeetingComments(meetingId: number) {
+    const res = await api.get(`/meetings/${meetingId}/comments`)
+    return res.data
+  },
+
+  async addMeetingComment(meetingId: number, text: string) {
+    const res = await api.post(`/meetings/${meetingId}/comments`, { text })
+    return res.data
+  },
+
+  async shareMeeting(meetingId: number) {
+    const res = await api.post(`/meetings/${meetingId}/share`)
+    return res.data
+  },
+
   async renameSpeaker(meetingId: number, oldName: string, newName: string) {
     const res = await api.patch(`/meetings/${meetingId}/rename-speaker`, {
       old_name: oldName,
