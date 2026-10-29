@@ -127,18 +127,26 @@ class WhisperTranscriber:
         try:
             from faster_whisper import WhisperModel
             logger.info(f"Running faster-whisper ({self.model_size}) on {audio_path}")
-            model = WhisperModel(self.model_size, device="cpu", compute_type="int8")
-            segments, _ = model.transcribe(audio_path, beam_size=5)
-            results = []
-            for s in segments:
-                results.append({
-                    "start": round(s.start, 2),
-                    "end": round(s.end, 2),
-                    "text": s.text.strip(),
-                    "confidence": 0.95,
-                })
-            if results:
-                return results
+            if os.environ.get("FAST_TEST") == "1" or os.environ.get("MEETORA_OFFLINE_ML") == "1":
+                model = None
+            else:
+                try:
+                    model = WhisperModel(self.model_size, device="cpu", compute_type="int8", local_files_only=True)
+                except Exception:
+                    model = WhisperModel(self.model_size, device="cpu", compute_type="int8")
+
+            if model is not None:
+                segments, _ = model.transcribe(audio_path, beam_size=5)
+                results = []
+                for s in segments:
+                    results.append({
+                        "start": round(s.start, 2),
+                        "end": round(s.end, 2),
+                        "text": s.text.strip(),
+                        "confidence": 0.95,
+                    })
+                if results:
+                    return results
         except ImportError:
             pass
         except Exception as e:

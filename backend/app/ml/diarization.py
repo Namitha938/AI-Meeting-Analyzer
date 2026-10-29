@@ -42,3 +42,4 @@ def merge_transcripts(
         diarization_intervals,
         known_participants=participants,
     )
+

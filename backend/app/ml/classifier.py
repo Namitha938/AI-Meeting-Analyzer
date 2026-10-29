@@ -111,3 +111,4 @@ def classify_sentence(text: str) -> Dict[str, Any]:
 def classify_batch(texts: List[str]) -> List[Dict[str, Any]]:
     """Batch sentence classification."""
     return [classify_sentence(t) for t in texts]
+

@@ -10,6 +10,7 @@ Submodules:
 - pipeline: End-to-end composite ML workflow
 """
 
+from app.ml.transcribe import transcribe
 from app.ml.transcription import transcribe_audio
 from app.ml.diarization import diarize_audio, merge_transcripts
 from app.ml.classifier import classify_sentence, classify_batch
@@ -19,6 +20,7 @@ from app.ml.analytics import compute_analytics
 from app.ml.pipeline import run_ml_pipeline
 
 __all__ = [
+    "transcribe",
     "transcribe_audio",
     "diarize_audio",
     "merge_transcripts",
@@ -30,3 +32,4 @@ __all__ = [
     "compute_analytics",
     "run_ml_pipeline",
 ]
+

@@ -24,3 +24,4 @@ def generate_summary(
     """
     logger.info(f"Generating summary for meeting: '{title}' ({len(transcripts)} transcripts)")
     return MeetingSummarizer.generate_summary(title, transcripts, decisions or [])
+
