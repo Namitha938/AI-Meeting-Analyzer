@@ -282,36 +282,6 @@ function AboutPage({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
     },
   ]
 
-  const team = [
-    {
-      name: 'Maya Lin',
-      role: 'Co-Founder & CEO',
-      bio: 'Ex-Product Lead at Stripe & Stanford CS. Obsessed with asynchronous team clarity and focus.',
-      avatar: 'ML',
-      color: 'peach',
-    },
-    {
-      name: 'Devin Zhao',
-      role: 'Co-Founder & CTO',
-      bio: 'PhD in Speech Recognition & NLP from MIT. Built high-scale diarization pipelines for 10M+ users.',
-      avatar: 'DZ',
-      color: 'blue-bg',
-    },
-    {
-      name: 'Sarah Kim',
-      role: 'Head of Product Design',
-      bio: 'Led interaction design at Notion and Figma. Passionate about calm, distraction-free productivity tools.',
-      avatar: 'SK',
-      color: 'lilac',
-    },
-    {
-      name: 'Marcus Vance',
-      role: 'VP of Engineering',
-      bio: 'Architected distributed real-time audio systems. Champion of zero-trust security infrastructure.',
-      avatar: 'MV',
-      color: 'purple',
-    },
-  ]
 
   return (
     <div className="landing about-page">
@@ -366,7 +336,7 @@ function AboutPage({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
               </div>
               <h3>"Our core belief is simple: Work should move forward, not circle back in endless meetings."</h3>
               <div className="quote-by">
-                <b>Maya Lin & Devin Zhao</b>
+                <b>The Meetora Team</b>
                 <small>Founders of Meetora</small>
               </div>
             </div>
@@ -394,25 +364,6 @@ function AboutPage({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
           </div>
         </section>
 
-        <section className="about-team-section">
-          <div className="section-copy" style={{ textAlign: 'center', margin: '0 auto 48px' }}>
-            <label>LEADERSHIP & RESEARCH</label>
-            <h2>Meet the builders behind Meetora.</h2>
-            <p style={{ margin: 'auto' }}>
-              A collective of machine learning researchers, systems engineers, and product designers.
-            </p>
-          </div>
-          <div className="team-grid">
-            {team.map((m) => (
-              <div className="team-card" key={m.name}>
-                <div className={`team-avatar ${m.color}`}>{m.avatar}</div>
-                <h3>{m.name}</h3>
-                <span className="team-role">{m.role}</span>
-                <p>{m.bio}</p>
-              </div>
-            ))}
-          </div>
-        </section>
 
         <section className="final-cta">
           <span className="cta-orb one" />
