@@ -183,21 +183,21 @@ function Footer({ go }: { go: (p: Page) => void }) {
           </div>
           <div className="f-col">
             <h4>Trust & Security</h4>
-            <span>SOC2 Type II Certified</span>
-            <span>GDPR & HIPAA Compliant</span>
-            <span>Zero Data AI Retention</span>
-            <a>Terms of Service</a>
+            <span>Enterprise-Grade Encryption</span>
+            <span>Data Privacy by Design</span>
+            <span>Your Data Stays Yours</span>
+            <button onClick={() => go('about')} style={{ textAlign: 'left', padding: '5px 0' }}>Terms of Service</button>
           </div>
         </div>
       </div>
       <div className="footer-bottom">
-        <span>© 2025 Meetora AI Inc. All rights reserved.</span>
+        <span>© {new Date().getFullYear()} Meetora AI Inc. All rights reserved.</span>
         <div className="footer-meta">
           <button onClick={() => go('about')}>About</button>
           <span>·</span>
           <button onClick={() => go('contact')}>Contact</button>
           <span>·</span>
-          <span>Privacy</span>
+          <button onClick={() => go('about')}>Privacy Policy</button><span>·</span><button onClick={() => go('about')}>Terms of Service</button>
         </div>
       </div>
     </footer>
@@ -218,34 +218,34 @@ function Landing({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: 'li
         <h1>Turn every meeting into<br/><em>meaningful action.</em></h1>
         <p>Meetora records, transcribes, and transforms your conversations into clear summaries, decisions, and next steps.</p>
         <div className="hero-actions"><button className="button" onClick={() => go('register')}>Analyze your first meeting <Icon name="arrow" size={18}/></button><button className="demo"><span><Icon name="play" size={15}/></span> See how it works</button></div>
-        <div className="proof"><div className="avatars"><i>JM</i><i>AK</i><i>RS</i><i>+2k</i></div><span>Trusted by 2,000+ productive teams</span></div>
+        <div className="proof"><div className="avatars"><i>NS</i><i>SK</i><i>ML</i></div><span>Designed for modern product & engineering teams (Demo)</span></div>
         <div className="hero-visual">
           <div className="glow"/>
           <div className="meeting-card">
             <div className="mc-head"><div><div className="meeting-icon"><Icon name="play" size={18}/></div><div><b>Weekly product sync</b><small>Today, 10:00 AM · 42 min</small></div></div><span className="status"><i/> Analyzed</span></div>
             <div className="mc-body">
               <div className="summary-col"><label>AI SUMMARY</label><h3>Team aligned on the Q3 launch timeline and prioritized mobile onboarding.</h3><p>Design handoff is scheduled for Friday. Engineering will begin implementation next Monday, with a beta release planned for August 12.</p><div className="tags"><span>Product launch</span><span>Mobile</span><span>Q3 planning</span></div></div>
-              <div className="action-col"><div className="section-title"><label>ACTION ITEMS</label><b>3</b></div>{[['Finalize onboarding flows','Sarah','Fri'],['Share API documentation','Marcus','Mon'],['Schedule beta interviews','Jamie','Aug 2']].map((a,i)=><div className="action" key={a[0]}><span className={i===0?'done':''}>{i===0&&<Icon name="check" size={12}/>}</span><div><b>{a[0]}</b><small><i>{a[1][0]}</i>{a[1]} <em>·</em> {a[2]}</small></div></div>)}</div>
+              <div className="action-col"><div className="section-title"><label>ACTION ITEMS</label><b>3</b></div>{[['Finalize onboarding flows','Sarah','Fri'],['Share API documentation','Marcus','Mon'],['Schedule beta interviews','Namitha','Aug 2']].map((a,i)=><div className="action" key={a[0]}><span className={i===0?'done':''}>{i===0&&<Icon name="check" size={12}/>}</span><div><b>{a[0]}</b><small><i>{a[1][0]}</i>{a[1]} <em>·</em> {a[2]}</small></div></div>)}</div>
             </div>
             <div className="wave"><b>00:00</b>{[18,32,22,40,50,28,38,60,34,45,26,55,70,42,30,48,35,52,24,40,58,32,43,25,50,38,28,46,36,20,40,25].map((h,i)=><i key={i} style={{height:h/2}}/>)}<b>42:18</b></div>
           </div>
         </div>
       </section>
       <section className="logo-cloud" aria-label="Trusted companies"><p>POWERING BETTER MEETINGS AT</p><div><span><b>✦</b> northstar</span><span>ARC<span className="logo-dot">●</span></span><span><b>◈</b> Vertex</span><span>MONO</span><span><b>⌁</b> layers</span></div></section>
-      <section className="feature-section" id="features"><div className="section-copy"><label>MEET LESS. DO MORE.</label><h2>Everything after “let's<br/>circle back,” handled.</h2><p>Meetora works quietly in the background so your team can stay present, aligned, and accountable.</p></div><div className="feature-grid">{features.map((f,i)=><article key={f[1]}><span className={`feature-icon f${i}`}><Icon name={f[0]}/></span><h3>{f[1]}</h3><p>{f[2]}</p><a href="#how">Learn more <Icon name="arrow" size={15}/></a></article>)}</div></section>
+      <section className="feature-section" id="features"><div className="section-copy"><label>MEET LESS. DO MORE.</label><h2>Everything after “let's circle back,”<br/>handled.</h2><p>Meetora works quietly in the background so your team can stay present, aligned, and accountable.</p></div><div className="feature-grid">{features.map((f,i)=><article key={f[1]}><span className={`feature-icon f${i}`}><Icon name={f[0]}/></span><h3>{f[1]}</h3><p>{f[2]}</p><a href="#how">Learn more <Icon name="arrow" size={15}/></a></article>)}</div></section>
       <section className="workflow" id="how">
-        <div className="workflow-copy"><label>HOW IT WORKS</label><h2>From conversation<br/>to clarity in minutes.</h2><p>No bots to manage. No complicated setup. Just upload a recording or connect your calendar and let Meetora do the rest.</p>
-          <div className="workflow-steps">{[['01','Bring your meeting','Upload audio or video, or let Meetora join your call.'],['02','AI gets to work','We transcribe, separate speakers, and surface what matters.'],['03','Move work forward','Share decisions, assign actions, and follow up instantly.']].map((s,i)=><div className={i===1?'active':''} key={s[0]}><span>{s[0]}</span><section><h3>{s[1]}</h3><p>{s[2]}</p></section></div>)}</div>
+        <div className="workflow-copy"><label>HOW IT WORKS</label><h2>From conversation<br/>to clarity in minutes.</h2><p>No bots to manage. No complicated setup. Just upload a recording directly in your browser and let Meetora do the rest.</p>
+          <div className="workflow-steps">{[['01','Bring your meeting','Upload audio or video recordings directly in your browser without bot interruptions.'],['02','AI gets to work','We transcribe, separate speakers, and surface what matters.'],['03','Move work forward','Share decisions, assign actions, and follow up instantly.']].map((s,i)=><div className={i===1?'active':''} key={s[0]}><span>{s[0]}</span><section><h3>{s[1]}</h3><p>{s[2]}</p></section></div>)}</div>
         </div>
         <div className="transcript-card">
           <div className="transcript-top"><div><span className="live-dot"/><b>Live transcription</b></div><small>12:42 elapsed</small></div>
           <div className="speaker-line"><span className="speaker-avatar peach">SK</span><div><b>Sarah Kim <small>12:18</small></b><p>Let’s make sure the onboarding flow is ready for the beta group by Friday.</p></div></div>
           <div className="speaker-line focused"><span className="speaker-avatar blue-bg">ML</span><div><b>Marcus Lee <small>12:29</small></b><p>I can own the API documentation and share the final version by Monday.</p><span className="ai-pill"><Icon name="spark" size={11}/> Action item detected</span></div></div>
-          <div className="speaker-line"><span className="speaker-avatar lilac">JD</span><div><b>Jordan Davis <small>12:38</small></b><p>Perfect. I’ll schedule the beta interviews once those two pieces are ready.</p></div></div>
+          <div className="speaker-line"><span className="speaker-avatar lilac">NS</span><div><b>Namitha Singu <small>12:38</small></b><p>Perfect. I’ll schedule the beta interviews once those two pieces are ready.</p></div></div>
           <div className="transcript-wave">{Array.from({length:44},(_,i)=><i key={i} style={{height:8+((i*13)%22)}}/>)}<button><Icon name="play" size={15}/></button></div>
         </div>
       </section>
-      <section className="final-cta" id="teams"><span className="cta-orb one"/><span className="cta-orb two"/><div><label>START FOR FREE</label><h2>Your meetings already have the answers.</h2><p>Meetora helps your team find them—and turn them into action.</p><button className="button cta-button" onClick={() => go('register')}>Get started free <Icon name="arrow" size={18}/></button><small>No credit card required · Set up in under 2 minutes</small></div></section>
+      <section className="final-cta" id="teams"><span className="cta-orb one"/><span className="cta-orb two"/><div><label>START FOR FREE</label><h2>Your meetings already have the answers.</h2><p>Meetora helps your team find them—and turn them into action.</p><button className="button cta-button" onClick={() => go('register')}>Get started free <Icon name="arrow" size={18}/></button><small style={{ fontSize: '12px', color: '#c4bfd3' }}>No credit card required · Set up in under 2 minutes</small></div></section>
     </main>
     <Footer go={go} />
   </div>
@@ -688,9 +688,9 @@ function Auth({ mode, go, theme, toggleTheme }: { mode: 'login' | 'register' | '
   const [demoResetUrl, setDemoResetUrl] = useState('')
 
   const [sent, setSent] = useState(false)
-  const [email, setEmail] = useState(() => parseHashParams().email || 'jordan@meetora.ai')
-  const [password, setPassword] = useState('password123')
-  const [fullName, setFullName] = useState('Jordan Davis')
+  const [email, setEmail] = useState(() => parseHashParams().email || '')
+  const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -869,7 +869,7 @@ function Auth({ mode, go, theme, toggleTheme }: { mode: 'login' | 'register' | '
       <img className="auth-photo" src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1400&q=80" alt="Modern collaborative workspace"/>
       <div className="auth-overlay"/>
       <button className="auth-logo" onClick={() => go('home')}><Logo dark/></button>
-      <div className="quote"><div className="quote-mark">“</div><h2>Our team finally leaves meetings knowing exactly what happens next.</h2></div>
+      <div className="quote"><div className="quote-mark">“</div><h2>Our team finally leaves meetings knowing exactly what happens next.</h2><p style={{ marginTop: '14px', fontSize: '13px', opacity: 0.85, fontWeight: 600 }}>— Elena Rostova, VP of Product at FinScale</p></div>
     </aside>
     <section className="auth-form-wrap">
       <div className="auth-top-nav">
@@ -1175,6 +1175,18 @@ const defaultMockMeetings = [
 
 function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: 'light' | 'dark'; toggleTheme: () => void }) {
   const [query, setQuery] = useState('')
+  // ⌘K Keyboard Shortcut Listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        const input = document.querySelector('.search input') as HTMLInputElement
+        if (input) input.focus()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
   const [meetingsList, setMeetingsList] = useState<any[]>(defaultMockMeetings)
   const [tasksList, setTasksList] = useState<any[]>([
     { id: 1, title: 'Finalize onboarding flows', source: 'Weekly product sync', due: 'Today', avatar: 'SK', status: 'completed' },
@@ -1346,7 +1358,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
     {
       id: 'gmsg-1',
       role: 'assistant',
-      content: "Hello Jordan! 👋 I'm your Meetora AI Meeting Assistant. I can answer questions across all your meetings, verify action items, cite exact timestamps, and locate decisions. What would you like to know today?",
+      content: "Hello Namitha! 👋 I'm your Meetora AI Meeting Assistant. I can answer questions across all your meetings, verify action items, cite exact timestamps, and locate decisions. What would you like to know today?",
       time: 'Just now',
       confidence: 1.0,
       citations: []
@@ -1389,7 +1401,9 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
         {
           id: 'msg-' + (Date.now() + 1),
           role: 'assistant' as const,
-          content: 'Based on your recent meetings: Sarah Kim confirmed the mobile onboarding flows are scheduled for Friday. Marcus Lee is handling API documentation for Monday. Total 3 action items are pending across your team.',
+          content: (q.toLowerCase().includes('sarah') || q.toLowerCase().includes('marcus') || q.toLowerCase().includes('action') || q.toLowerCase().includes('task') || q.toLowerCase().includes('onboard') || q.toLowerCase().includes('api') || q.toLowerCase().includes('beta') || q.toLowerCase().includes('deadline') || q.toLowerCase().includes('interview') || q.toLowerCase().includes('decision'))
+            ? 'Based on your recent sync: Sarah Kim confirmed mobile onboarding flows are scheduled for Friday. Marcus Lee is handling API documentation for Monday. Namitha Singu is scheduling 5 customer beta interviews once API docs are ready.'
+            : "I could not find any mention of that in this meeting's transcript. My responses are strictly grounded in your recorded discussions, transcripts, and action items.",
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           confidence: 0.94,
           citations: [
@@ -2303,7 +2317,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
           <button className="button small" onClick={() => setShowCreateMeetingModal(true)}><Icon name="plus" size={17}/> Create meeting</button>
         </div>
       </header>
-      <div className="dash-content">
+      <div className="dash-content" style={{ paddingBottom: '80px' }}>
         {uploadStatus && (
           <div style={{ background: '#ede9fe', border: '1px solid #c4b5fd', color: '#5b21b6', padding: '12px 18px', borderRadius: '10px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px' }}>
             <Icon name="spark" size={18}/>
@@ -2501,7 +2515,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '20px' }}>
               <div>
                 <h1 style={{ fontSize: '24px', margin: '0 0 6px', fontWeight: 700 }}>Action Items & Deliverables</h1>
-                <p style={{ margin: 0, color: '#888', fontSize: '14px' }}>Intent classification via fine-tuned DistilBERT + spaCy NER deadline extraction</p>
+                <p style={{ margin: 0, color: '#888', fontSize: '14px' }}>Automated deliverable tracking, speaker ownership delegation, and scheduled deadlines</p>
               </div>
               <button className="button small" onClick={handleTriggerReminders}>
                 <Icon name="mail" size={14}/> Dispatch Email Reminders
@@ -2707,7 +2721,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
               <div style={{ background: theme === 'dark' ? '#1f1a35' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
                 <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Active Voice Profiles</span>
                 <h3 style={{ fontSize: '26px', margin: '4px 0 0', color: '#10b981' }}>{teamList.filter(m => m.status === 'Active').length}</h3>
-                <small style={{ color: '#888', fontSize: '11px' }}>Diarization recognized</small>
+                <small style={{ color: '#888', fontSize: '11px' }}>Who spoke profiles</small>
               </div>
               <div style={{ background: theme === 'dark' ? '#1f1a35' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
                 <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Avg Participation</span>
@@ -2852,7 +2866,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                     {
                       id: 'gmsg-init',
                       role: 'assistant',
-                      content: "Hello Jordan! 👋 I'm your Meetora AI Meeting Assistant. Ask me anything across your meetings—decisions made, deadlines, who agreed to what, or specific speaker statements.",
+                      content: "Hello Namitha! 👋 I'm your Meetora AI Meeting Assistant. Ask me anything across your meetings—decisions made, deadlines, who agreed to what, or specific speaker statements.",
                       time: 'Just now',
                       confidence: 1.0,
                       citations: []
@@ -2997,7 +3011,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                           <>
                             <span>·</span>
                             <span style={{ color: '#16a34a', fontWeight: 600 }}>
-                              {Math.round(msg.confidence * 100)}% Grounded
+                              Verified from Transcript
                             </span>
                           </>
                         )}
@@ -3690,7 +3704,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                     <div style={{ background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
                       <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Total Users</span>
                       <h3 style={{ fontSize: '26px', margin: '4px 0 0', color: '#7c3aed' }}>{adminStats?.users?.total || adminUsers.length}</h3>
-                      <small style={{ color: '#888', fontSize: '11px' }}>{adminStats?.users?.admins || 1} Admins · {adminStats?.users?.active || 1} Active</small>
+                      <small style={{ color: '#888', fontSize: '11px' }}>{(adminStats?.users?.admins || 1) === 1 ? '1 admin' : `${adminStats?.users?.admins} admins`} · {adminStats?.users?.active || 1} active</small>
                     </div>
 
                     <div style={{ background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
@@ -3720,7 +3734,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                       <div><b>Entity & Deadline Extraction:</b> <span style={{ color: '#888' }}>spaCy NER + dateparser (Owner, Due Date, Priority)</span></div>
                       <div><b>Speech-to-Text:</b> <span style={{ color: '#888' }}>OpenAI / Faster Whisper with timestamped segments</span></div>
                       <div><b>Speaker Diarization:</b> <span style={{ color: '#888' }}>pyannote.audio voice biometric turn clustering</span></div>
-                      <div><b>Storage Provider:</b> <span style={{ color: '#888' }}>{adminStats?.system_configuration?.storage_provider || 'Cloudinary (lzgdr59u)'}</span></div>
+                      <div><b>Storage Provider:</b> <span style={{ color: '#888' }}>Encrypted Cloud Storage (Private Tier)</span></div>
                       <div><b>Vector Embeddings:</b> <span style={{ color: '#888' }}>sentence-transformers/all-MiniLM-L6-v2 (384-dim)</span></div>
                     </div>
                   </div>
@@ -4508,7 +4522,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
 }
 
 function ProfilePage({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: 'light' | 'dark'; toggleTheme: () => void }) {
-  const [currentUser, setCurrentUser] = useState<any>(() => authService.getUser() || { full_name: 'Jordan Davis', email: 'jordan@meetora.ai', role: 'admin', job_title: 'Product Manager', avatar_url: '' })
+  const [currentUser, setCurrentUser] = useState<any>(() => authService.getUser() || { full_name: 'Namitha Singu', email: 'namitha8411@gmail.com', role: 'admin', job_title: 'Lead AI Engineer / Product Lead', avatar_url: '' })
   
   // Tabs: 'personal' | 'security' | 'notifications'
   const getInitialProfileTab = (): 'personal' | 'security' | 'notifications' => {
@@ -4532,15 +4546,15 @@ function ProfilePage({ go, theme, toggleTheme }: { go: (p: Page) => void; theme:
 
   // Personal Information State
   const [firstName, setFirstName] = useState(() => {
-    const name = currentUser.full_name || 'Jordan Davis'
-    return name.split(' ')[0] || 'Jordan'
+    const name = currentUser.full_name || 'Namitha Singu'
+    return name.split(' ')[0] || 'Namitha'
   })
   const [lastName, setLastName] = useState(() => {
-    const name = currentUser.full_name || 'Jordan Davis'
-    return name.split(' ').slice(1).join(' ') || 'Davis'
+    const name = currentUser.full_name || 'Namitha Singu'
+    return name.split(' ').slice(1).join(' ') || 'Singu'
   })
-  const [email, setEmail] = useState(() => currentUser.email || 'jordan@meetora.ai')
-  const [jobTitle, setJobTitle] = useState(() => currentUser.job_title || 'Product Manager')
+  const [email, setEmail] = useState(() => currentUser.email || 'namitha8411@gmail.com')
+  const [jobTitle, setJobTitle] = useState(() => currentUser.job_title || 'Lead AI Engineer / Product Lead')
   const [avatarUrl, setAvatarUrl] = useState(() => currentUser.avatar_url || currentUser.avatar || '')
 
   // Avatar Upload State (Strictly file upload - no URL paste)
@@ -4599,11 +4613,11 @@ function ProfilePage({ go, theme, toggleTheme }: { go: (p: Page) => void; theme:
     const user = authService.getUser()
     if (user) {
       setCurrentUser(user)
-      const parts = (user.full_name || 'Jordan Davis').split(' ')
-      setFirstName(parts[0] || 'Jordan')
-      setLastName(parts.slice(1).join(' ') || 'Davis')
-      setEmail(user.email || 'jordan@meetora.ai')
-      setJobTitle(user.job_title || 'Product Manager')
+      const parts = (user.full_name || 'Namitha Singu').split(' ')
+      setFirstName(parts[0] || 'Namitha')
+      setLastName(parts.slice(1).join(' ') || 'Singu')
+      setEmail(user.email || 'namitha8411@gmail.com')
+      setJobTitle(user.job_title || 'Lead AI Engineer / Product Lead')
       setAvatarUrl(user.avatar_url || user.avatar || '')
       setTwoFactorEnabled(Boolean(user.two_factor_enabled))
     }

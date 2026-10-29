@@ -3,8 +3,6 @@ import {
   ResponsiveContainer,
   AreaChart,
   Area,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   Tooltip,
@@ -21,28 +19,32 @@ interface AnalyticsChartsProps {
 export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ theme, distribution }) => {
   const isDark = theme === 'dark'
 
+  // Weekly meeting activity matching actual recorded syncs (Total: 84 min / 1.4 hrs)
   const weeklyActivity = [
-    { day: 'Mon', minutes: 85, meetings: 2 },
-    { day: 'Tue', minutes: 120, meetings: 3 },
-    { day: 'Wed', minutes: 65, meetings: 1 },
-    { day: 'Thu', minutes: 145, meetings: 4 },
-    { day: 'Fri', minutes: 90, meetings: 2 },
+    { day: 'Mon', minutes: 0, meetings: 0 },
+    { day: 'Tue', minutes: 24, meetings: 1 },
+    { day: 'Wed', minutes: 18, meetings: 1 },
+    { day: 'Thu', minutes: 42, meetings: 1 },
+    { day: 'Fri', minutes: 0, meetings: 0 },
     { day: 'Sat', minutes: 0, meetings: 0 },
-    { day: 'Sun', minutes: 30, meetings: 1 },
+    { day: 'Sun', minutes: 0, meetings: 0 },
   ]
 
+  // Centralized speaker percentages (Sum: 100% exact)
   const speakerData = distribution
     ? Object.entries(distribution).map(([name, pct]) => ({ name, value: pct }))
     : [
-        { name: 'Sarah Kim', value: 45 },
-        { name: 'Marcus Lee', value: 35 },
-        { name: 'Jordan Davis', value: 20 },
+        { name: 'Namitha Singu', value: 40 },
+        { name: 'Sarah Kim', value: 35 },
+        { name: 'Marcus Lee', value: 25 },
       ]
+
+  const maxShare = Math.max(...speakerData.map(s => s.value))
+  const isBalanced = maxShare <= 50
 
   const COLORS = ['#7c67dc', '#38bdf8', '#34d399', '#f59e0b', '#ec4899']
 
   const textColor = isDark ? '#9e99ad' : '#6b7280'
-  const gridColor = isDark ? '#2e284b' : '#f1f0f4'
   const tooltipBg = isDark ? '#1a172c' : '#ffffff'
   const tooltipBorder = isDark ? '#383256' : '#e5e7eb'
 
@@ -63,10 +65,10 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ theme, distrib
             <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: isDark ? '#f4f2fa' : '#1e1b33' }}>
               Weekly Meeting Time
             </h3>
-            <small style={{ color: textColor }}>Total minutes spent across all calls</small>
+            <small style={{ color: textColor }}>Daily minutes across recorded syncs</small>
           </div>
           <span style={{ fontSize: '11px', fontWeight: 600, color: '#6d55d8', background: isDark ? '#281f4f' : '#eeeaff', padding: '3px 8px', borderRadius: '6px' }}>
-            +12% vs last week
+            Current Week
           </span>
         </div>
         <div style={{ width: '100%', height: 180 }}>
@@ -109,12 +111,12 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ theme, distrib
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <div>
             <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: isDark ? '#f4f2fa' : '#1e1b33' }}>
-              Speaker Diarization & Participation
+              Who Spoke (Speaker Separation)
             </h3>
             <small style={{ color: textColor }}>Talk-time breakdown by speaker</small>
           </div>
-          <span style={{ fontSize: '11px', fontWeight: 600, color: '#38bdf8', background: isDark ? '#142c40' : '#e0f2fe', padding: '3px 8px', borderRadius: '6px' }}>
-            Balanced
+          <span style={{ fontSize: '11px', fontWeight: 600, color: isBalanced ? '#10b981' : '#f59e0b', background: isDark ? '#162b23' : '#dcfce7', padding: '3px 8px', borderRadius: '6px' }}>
+            {isBalanced ? 'Balanced Dynamic' : 'Lead Speaker Focus'}
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -163,4 +165,3 @@ export const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ theme, distrib
     </div>
   )
 }
-
