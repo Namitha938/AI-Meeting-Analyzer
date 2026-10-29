@@ -1,27 +1,23 @@
-import logging
-from typing import List, Dict, Any
+"""
+Module 5 / Step 12: Meeting Summarizer
+Delegates to Step 12 summary.py (hierarchical chunk-and-summarize + KeyBERT key points).
+"""
 
-from app.nlp_analysis import MeetingSummarizer
+import logging
+from typing import List, Dict, Any, Optional
+
+from app.ml.summary import hierarchical_summarize, extract_key_points_keybert
 
 logger = logging.getLogger("meetora.ml.summarizer")
+
 
 def generate_summary(
     title: str,
     transcripts: List[Dict[str, Any]],
-    decisions: List[Dict[str, Any]] = None,
+    decisions: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     """
-    Module 5: Meeting Summarizer.
-    Generates structured AI executive summary, key takeaways, and recommended next steps.
-
-    Args:
-        title: Meeting title.
-        transcripts: List of transcript segment dicts.
-        decisions: Optional list of extracted decision dicts.
-
-    Returns:
-        Dict with 'overview', 'key_takeaways', 'next_steps', and 'model_version'.
+    Step 12: Generates hierarchical meeting summary, key takeaways, and KeyBERT key points.
     """
-    logger.info(f"Generating summary for meeting: '{title}' ({len(transcripts)} transcripts)")
-    return MeetingSummarizer.generate_summary(title, transcripts, decisions or [])
-
+    logger.info(f"Generating hierarchical summary for meeting: '{title}' ({len(transcripts)} transcripts)")
+    return hierarchical_summarize(transcripts, title=title, decisions=decisions or [])

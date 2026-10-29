@@ -5,8 +5,8 @@ Submodules:
 - diarize / diarization: pyannote.audio speaker separation and timestamp-overlap merging
 - classifier: Custom trained hybrid model & rule-based intent classifier
 - extract / extraction: spaCy NER owner matching & dateparser deadline extraction
-- summarizer: Executive summary generation with takeaways & next steps
-- analytics: Talk-time distribution, sentiment scoring, and topic chapters
+- summary / summarizer: Hierarchical summarization with KeyBERT key points
+- sentiment / analytics: RoBERTa sentiment per speaker & diarization talk-time distribution
 - pipeline: End-to-end composite ML workflow
 """
 
@@ -17,7 +17,9 @@ from app.ml.diarization import diarize_audio, merge_transcripts
 from app.ml.classifier import predict, predict_one, classify_sentence, classify_batch, load_model
 from app.ml.extract import extract_action_item, extract_actions
 from app.ml.extraction import extract_action_items, extract_decisions
+from app.ml.summary import hierarchical_summarize, extract_key_points_keybert
 from app.ml.summarizer import generate_summary
+from app.ml.sentiment import compute_full_analytics, compute_speaker_sentiments, compute_speaker_talk_times
 from app.ml.analytics import compute_analytics
 from app.ml.pipeline import run_ml_pipeline
 
@@ -37,7 +39,12 @@ __all__ = [
     "extract_actions",
     "extract_action_items",
     "extract_decisions",
+    "hierarchical_summarize",
+    "extract_key_points_keybert",
     "generate_summary",
+    "compute_full_analytics",
+    "compute_speaker_sentiments",
+    "compute_speaker_talk_times",
     "compute_analytics",
     "run_ml_pipeline",
 ]
