@@ -1,0 +1,12 @@
+{
+  "model_type": "transformer_intent",
+  "classes": [
+    "action_item",
+    "decision",
+    "question",
+    "general"
+  ],
+  "vocab_size": 250,
+  "accuracy": 0.6,
+  "ami_accuracy": 0.5455
+}

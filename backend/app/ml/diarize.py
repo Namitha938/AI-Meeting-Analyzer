@@ -285,3 +285,4 @@ def merge_speaker_turns(
 # Compatibility aliases
 diarize_audio = diarize
 merge_transcripts = merge_speaker_turns
+

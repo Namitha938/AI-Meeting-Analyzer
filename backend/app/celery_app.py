@@ -28,6 +28,22 @@ celery_app.conf.update(
     },
 )
 
+# Step 10: Load trained classifier model once at worker process startup
+try:
+    from celery.signals import worker_process_init
+
+    @worker_process_init.connect
+    def on_worker_init(**kwargs):
+        """Pre-load saved_model classifier once at Celery worker startup."""
+        try:
+            from app.ml.classifier import load_model
+            load_model()
+            logger.info("Step 10: Classifier model successfully initialized on Celery worker startup.")
+        except Exception as err:
+            logger.warning(f"Error loading classifier on worker startup: {err}")
+except Exception:
+    pass
+
 @celery_app.task(name="send_deadline_reminders_task")
 def send_deadline_reminders_task():
     """

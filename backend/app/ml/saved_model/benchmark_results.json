@@ -1,0 +1,16 @@
+{
+  "dataset_plan": "Hybrid: Custom Training Dataset + AMI Meeting Corpus External Test Set",
+  "models": {
+    "tfidf_baseline": {
+      "name": "TF-IDF + Softmax Classifier",
+      "val_accuracy": 0.6,
+      "ami_external_accuracy": 0.5
+    },
+    "transformer_intent": {
+      "name": "Transformer Intent Classifier (DistilBERT contextual architecture)",
+      "val_accuracy": 0.6,
+      "ami_external_accuracy": 0.5455
+    }
+  },
+  "selected_model": "transformer_intent"
+}
