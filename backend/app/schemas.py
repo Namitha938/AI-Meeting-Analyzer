@@ -202,6 +202,7 @@ class MeetingResponse(BaseModel):
     participants: List[str] = []
     tags: List[str] = []
     color: str
+    audio_path: Optional[str] = None
     model_version: Optional[str] = "meetora-pipeline-v2.4"
     primary_language: Optional[str] = "en"
     created_at: datetime

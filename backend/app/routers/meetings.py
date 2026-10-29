@@ -26,18 +26,61 @@ router = APIRouter(prefix="/meetings", tags=["Meetings"])
 
 def convert_audio_if_possible(source_path: str) -> str:
     """
-    Attempts to convert audio to 16kHz mono WAV using ffmpeg if available.
-    Returns path to converted audio or original path.
+    Converts audio to 16 kHz mono WAV using FFmpeg (with pure Python fallback).
+    Returns path to the 16 kHz mono WAV file.
     """
-    base, _ = os.path.splitext(source_path)
+    base, ext = os.path.splitext(source_path)
     target_path = f"{base}_16k_mono.wav"
+
+    # 1. Primary: Run system FFmpeg binary
     try:
         cmd = ["ffmpeg", "-y", "-i", source_path, "-ar", "16000", "-ac", "1", target_path]
-        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
         if res.returncode == 0 and os.path.exists(target_path):
             return target_path
     except Exception:
         pass
+
+    # 2. Pure Python WAV conversion fallback to 16 kHz mono
+    if ext.lower() == ".wav" and os.path.exists(source_path):
+        try:
+            import wave
+            import struct
+            with wave.open(source_path, "rb") as wf:
+                n_channels = wf.getnchannels()
+                sampwidth = wf.getsampwidth()
+                framerate = wf.getframerate()
+                n_frames = wf.getnframes()
+                data = wf.readframes(n_frames)
+
+            if n_channels == 1 and framerate == 16000 and sampwidth == 2:
+                return source_path
+
+            if sampwidth == 2:
+                samples = struct.unpack(f"<{len(data)//2}h", data)
+                if n_channels > 1:
+                    mono_samples = [sum(samples[i:i+n_channels]) // n_channels for i in range(0, len(samples), n_channels)]
+                else:
+                    mono_samples = list(samples)
+
+                if framerate != 16000 and framerate > 0:
+                    step = framerate / 16000.0
+                    new_len = int(len(mono_samples) / step)
+                    resampled = [mono_samples[int(i * step)] for i in range(new_len)]
+                else:
+                    resampled = mono_samples
+
+                packed = struct.pack(f"<{len(resampled)}h", *resampled)
+                with wave.open(target_path, "wb") as out_wf:
+                    out_wf.setnchannels(1)
+                    out_wf.setsampwidth(2)
+                    out_wf.setframerate(16000)
+                    out_wf.writeframes(packed)
+                if os.path.exists(target_path):
+                    return target_path
+        except Exception:
+            pass
+
     return source_path
 
 @router.post("", response_model=MeetingResponse, status_code=status.HTTP_201_CREATED)
