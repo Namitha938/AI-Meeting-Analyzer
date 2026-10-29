@@ -125,6 +125,7 @@ def run_meeting_pipeline_sync(meeting_id: int):
     finally:
         db.close()
 
+@celery_app.task(name="process_meeting")
 @celery_app.task(name="app.celery_app.process_meeting")
 def process_meeting(meeting_id: int):
     run_meeting_pipeline_sync(meeting_id)
