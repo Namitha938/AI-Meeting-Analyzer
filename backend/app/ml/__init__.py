@@ -1,8 +1,8 @@
 """
 Meetora AI Machine Learning Pipeline Package
 Submodules:
-- transcription: Whisper Speech-to-Text with timestamp alignment
-- diarization: Speaker separation and utterance merging
+- transcribe / transcription: Whisper Speech-to-Text with timestamp alignment
+- diarize / diarization: pyannote.audio speaker separation and timestamp-overlap merging
 - classifier: Custom DistilBERT / Softmax sentence intent classification
 - extraction: Named Entity Recognition & rule-based action/decision extraction
 - summarizer: Executive summary generation with takeaways & next steps
@@ -12,6 +12,7 @@ Submodules:
 
 from app.ml.transcribe import transcribe
 from app.ml.transcription import transcribe_audio
+from app.ml.diarize import diarize, merge_speaker_turns
 from app.ml.diarization import diarize_audio, merge_transcripts
 from app.ml.classifier import classify_sentence, classify_batch
 from app.ml.extraction import extract_action_items, extract_decisions
@@ -22,7 +23,9 @@ from app.ml.pipeline import run_ml_pipeline
 __all__ = [
     "transcribe",
     "transcribe_audio",
+    "diarize",
     "diarize_audio",
+    "merge_speaker_turns",
     "merge_transcripts",
     "classify_sentence",
     "classify_batch",
@@ -32,4 +35,3 @@ __all__ = [
     "compute_analytics",
     "run_ml_pipeline",
 ]
-
