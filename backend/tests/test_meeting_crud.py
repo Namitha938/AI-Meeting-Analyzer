@@ -5,6 +5,25 @@ from app.models import Meeting, User, ActionItem, Decision, Transcript
 class TestMeetingCRUD(unittest.TestCase):
     def setUp(self):
         self.db = SessionLocal()
+        # Ensure a meeting with action items and decisions exists for testing
+        m = self.db.query(Meeting).filter(Meeting.action_items.any()).first()
+        if not m:
+            m = self.db.query(Meeting).first()
+            if not m:
+                u = self.db.query(User).first()
+                if not u:
+                    u = User(email="test_crud@meetora.ai", hashed_password="hashed_pw_test", role="user")
+                    self.db.add(u)
+                    self.db.commit()
+                m = Meeting(title="Sprint Planning Meeting", user_id=u.id, status="completed", duration_seconds=120)
+                self.db.add(m)
+                self.db.commit()
+            
+            # Ensure action item and decision exist
+            item = ActionItem(meeting_id=m.id, title="Finalize test specs", status="pending")
+            dec = Decision(meeting_id=m.id, decision_text="Approved architecture")
+            self.db.add_all([item, dec])
+            self.db.commit()
 
     def tearDown(self):
         self.db.close()
@@ -19,7 +38,7 @@ class TestMeetingCRUD(unittest.TestCase):
         self.assertIn(m.status, ["processing", "completed", "failed"])
 
     def test_action_items_and_decisions(self):
-        m = self.db.query(Meeting).first()
+        m = self.db.query(Meeting).filter(Meeting.action_items.any()).first()
         self.assertIsNotNone(m)
         
         # Verify action items
@@ -36,4 +55,3 @@ class TestMeetingCRUD(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
