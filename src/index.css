@@ -779,3 +779,175 @@ div[style*="position: fixed"][style*="inset: 0"] > div {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* ==========================================================================
+   About & Contact Us Animations (Meetora v2.0)
+   ========================================================================== */
+
+/* 1. About & Contact Hero Section Entrances */
+.about-hero h1, .contact-hero h1 {
+  animation: fade-slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.about-hero p, .contact-hero p {
+  animation: fade-slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
+}
+
+/* 2. About Stat Cards Staggered Animation & Hover */
+.about-stat-card {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease !important;
+  animation: fade-slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.about-stat-card:nth-child(1) { animation-delay: 0.1s; }
+.about-stat-card:nth-child(2) { animation-delay: 0.2s; }
+.about-stat-card:nth-child(3) { animation-delay: 0.3s; }
+.about-stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+.about-stat-card:hover {
+  transform: translateY(-6px) !important;
+  box-shadow: 0 20px 45px rgba(109, 85, 216, 0.18) !important;
+  border-color: #baa7ff !important;
+}
+
+.about-stat-card h2 {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
+}
+
+.about-stat-card:hover h2 {
+  transform: scale(1.06);
+  color: #553ec4;
+}
+
+/* 3. Story Highlight Card with Glowing Pulsing Badge */
+@keyframes pulse-heart {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(108, 84, 211, 0.5);
+  }
+  50% {
+    transform: scale(1.12);
+    box-shadow: 0 0 0 10px rgba(108, 84, 211, 0);
+  }
+}
+
+.highlight-badge {
+  animation: pulse-heart 2.6s ease-in-out infinite;
+}
+
+.story-highlight-card {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+}
+
+.story-highlight-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 30px 70px rgba(33, 25, 66, 0.35);
+}
+
+/* 4. About Guiding Principles Hover */
+.about-values-section article {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease !important;
+}
+
+.about-values-section article:hover {
+  transform: translateY(-6px) !important;
+  border-color: #7b65e2 !important;
+  box-shadow: 0 22px 50px rgba(44, 35, 71, 0.14) !important;
+}
+
+.about-values-section article:hover .feature-icon {
+  transform: scale(1.12) rotate(-5deg);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 5. Contact Channels Interactive Hover Lift */
+.channel-card {
+  transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.26s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease !important;
+  cursor: pointer;
+}
+
+.channel-card:hover {
+  transform: translateY(-4px) translateX(4px) !important;
+  box-shadow: 0 18px 40px rgba(109, 85, 216, 0.15) !important;
+  border-color: #a5b4fc !important;
+}
+
+.channel-card .channel-icon {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease, color 0.2s ease;
+}
+
+.channel-card:hover .channel-icon {
+  transform: scale(1.14) rotate(6deg);
+  background: #6d55d8;
+  color: #fff;
+}
+
+/* 6. Channel Badge Breathing Pulse */
+@keyframes badge-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.92;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+.channel-badge {
+  display: inline-block;
+  animation: badge-pulse 3s ease-in-out infinite;
+}
+
+/* 7. Office Card Hover */
+.office-card {
+  transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.26s ease, border-color 0.25s ease !important;
+}
+
+.office-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 14px 34px rgba(44, 35, 71, 0.1) !important;
+  border-color: #c4b5fd !important;
+}
+
+.office-card:hover .channel-icon {
+  transform: scale(1.1) rotate(-4deg);
+  transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 8. Contact Form Smooth Focus & Box Hover */
+.contact-form-box {
+  animation: fade-slide-up 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.18s both;
+  transition: box-shadow 0.3s ease, border-color 0.25s ease;
+}
+
+.contact-form-box:hover {
+  box-shadow: 0 25px 60px rgba(43, 35, 71, 0.12);
+}
+
+.contact-form-box input, .contact-form-box select, .contact-form-box textarea {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.18s ease;
+}
+
+.contact-form-box input:focus, .contact-form-box select:focus, .contact-form-box textarea:focus {
+  transform: translateY(-2px);
+}
+
+/* 9. FAQ Card Hover */
+.faq-item {
+  transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.26s ease, border-color 0.25s ease !important;
+}
+
+.faq-item:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 16px 36px rgba(44, 35, 71, 0.1) !important;
+  border-color: #baa7ff !important;
+}
+
+/* 10. Success Message Checkmark Elastic Pop */
+.success-icon-wrap {
+  animation: check-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}

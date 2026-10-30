@@ -404,22 +404,22 @@ function ContactPage({ go, theme, toggleTheme }: { go: (p: Page) => void; theme:
       icon: 'mail',
       title: 'Customer & Tech Support',
       desc: 'Need help with setup, transcription, or integrations?',
-      detail: 'support@meetora.ai',
+      detail: 'testsbit4@gmail.com',
       badge: 'Avg response: < 2 hrs',
     },
     {
       icon: 'users',
       title: 'Sales & Enterprise',
       desc: 'Looking for custom volume pricing, SSO, or security reviews?',
-      detail: 'sales@meetora.ai',
+      detail: 'testsbit4@gmail.com',
       badge: 'Custom demos available',
     },
     {
       icon: 'spark',
-      title: 'Partnerships & Press',
+      title: 'Partnerships & Inquiries',
       desc: 'Inquiries regarding API access, media kits, or integrations.',
-      detail: 'press@meetora.ai',
-      badge: 'Media kit ready',
+      detail: 'testsbit4@gmail.com',
+      badge: 'Direct inbox',
     },
   ]
 
@@ -506,8 +506,8 @@ function ContactPage({ go, theme, toggleTheme }: { go: (p: Page) => void; theme:
                     </div>
                     <h2>Thank you, {formData.name || 'there'}!</h2>
                     <p>
-                      Your message has been safely received. Our specialist team has been notified
-                      and will follow up with you at <b>{formData.email}</b> within 2 hours.
+                      Your message has been safely received. Our team has been notified
+                      and will follow up at <b>{formData.email}</b> within 2 hours. You can also reach us directly at <b>testsbit4@gmail.com</b>.
                     </p>
                     <button
                       className="button"
