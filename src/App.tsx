@@ -619,15 +619,18 @@ function Auth({ mode, go, theme, toggleTheme }: { mode: 'login' | 'register' | '
   const forgot = mode === 'forgot'
   const verify = mode === 'verify'
 
-  // Query params for reset token & email from URL hash
+  // Query params for reset token, email, redirect, expired, and reason from URL hash
   const parseHashParams = () => {
-    if (typeof window === 'undefined') return { token: '', email: '' }
+    if (typeof window === 'undefined') return { token: '', email: '', redirect: '', expired: '', reason: '' }
     const hash = window.location.hash
     const query = hash.includes('?') ? hash.split('?')[1] : ''
     const params = new URLSearchParams(query)
     return {
       token: params.get('token') || '',
       email: params.get('email') || '',
+      redirect: params.get('redirect') || '',
+      expired: params.get('expired') || '',
+      reason: params.get('reason') || '',
     }
   }
 
@@ -662,6 +665,14 @@ function Auth({ mode, go, theme, toggleTheme }: { mode: 'login' | 'register' | '
   // Two-Factor Authentication state during login
   const [require2FA, setRequire2FA] = useState(false)
   const [twoFactorCode, setTwoFactorCode] = useState('')
+  const [useBackupCode, setUseBackupCode] = useState(false)
+  const [sessionNotice, setSessionNotice] = useState<{ text: string; type: 'warning' | 'info' } | null>(() => {
+    const p = parseHashParams()
+    if (p.expired === 'session') return { text: '🔒 Session Expired: Your security token has expired. Please sign in again.', type: 'warning' }
+    if (p.expired === 'idle') return { text: '⏱️ Inactive Session: You were signed out after 45 minutes of inactivity for your protection.', type: 'warning' }
+    if (p.reason === 'unauthorized') return { text: '🛡️ Protected Page: Please sign in to access your meeting dashboard.', type: 'info' }
+    return null
+  })
 
   // Google OAuth & Account Chooser state
   const [showGooglePicker, setShowGooglePicker] = useState(false)
@@ -730,10 +741,12 @@ function Auth({ mode, go, theme, toggleTheme }: { mode: 'login' | 'register' | '
       try {
         const res = await authService.login({ email, password, totp_code: twoFactorCode.trim() })
         if (res?.access_token) {
-          go('dashboard')
+          const p = parseHashParams()
+          const dest = (p.redirect && ['dashboard', 'profile'].includes(p.redirect as Page)) ? (p.redirect as Page) : 'dashboard'
+          go(dest)
         }
       } catch (err: any) {
-        setErrorMsg(err?.response?.data?.detail || err?.message || 'Invalid authenticator code. Please try again.')
+        setErrorMsg(err?.response?.data?.detail || err?.message || 'Invalid authenticator code or backup code. Please try again.')
       } finally {
         setLoading(false)
       }
@@ -752,7 +765,9 @@ function Auth({ mode, go, theme, toggleTheme }: { mode: 'login' | 'register' | '
         setLoading(false)
         return
       }
-      go('dashboard')
+      const p = parseHashParams()
+      const dest = (p.redirect && ['dashboard', 'profile'].includes(p.redirect as Page)) ? (p.redirect as Page) : 'dashboard'
+      go(dest)
     } catch (err: any) {
       console.warn('Backend auth request error:', err)
       const detail = err?.response?.data?.detail
@@ -780,7 +795,9 @@ function Auth({ mode, go, theme, toggleTheme }: { mode: 'login' | 'register' | '
         full_name: gUser.full_name,
         google_id: gUser.uid,
       })
-      go('dashboard')
+      const p = parseHashParams()
+      const dest = (p.redirect && ['dashboard', 'profile'].includes(p.redirect as Page)) ? (p.redirect as Page) : 'dashboard'
+      go(dest)
     } catch (err: any) {
       console.warn('Google sign-in error:', err)
       const msg = err?.message || ''
@@ -807,7 +824,9 @@ function Auth({ mode, go, theme, toggleTheme }: { mode: 'login' | 'register' | '
         google_id: 'google-oauth-' + chosenEmail.replace(/[^a-zA-Z0-9]/g, '_'),
       })
       setShowGooglePicker(false)
-      go('dashboard')
+      const p = parseHashParams()
+      const dest = (p.redirect && ['dashboard', 'profile'].includes(p.redirect as Page)) ? (p.redirect as Page) : 'dashboard'
+      go(dest)
     } catch (err: any) {
       setErrorMsg(err?.message || 'Could not authenticate with chosen Google account.')
     } finally {
@@ -867,6 +886,24 @@ function Auth({ mode, go, theme, toggleTheme }: { mode: 'login' | 'register' | '
             : 'Your meetings are ready when you are.'}
         </p>
 
+        {sessionNotice && !errorMsg && (
+          <div style={{
+            background: sessionNotice.type === 'warning' ? 'rgba(234, 179, 8, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+            border: `1px solid ${sessionNotice.type === 'warning' ? '#eab308' : '#6366f1'}`,
+            color: sessionNotice.type === 'warning' ? (theme === 'dark' ? '#fde047' : '#854d0e') : (theme === 'dark' ? '#a5b4fc' : '#3730a3'),
+            padding: '12px 14px',
+            borderRadius: '8px',
+            fontSize: '13px',
+            fontWeight: 600,
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <span>{sessionNotice.text}</span>
+          </div>
+        )}
+
         {errorMsg && (
           <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', marginBottom: '16px' }}>
             {errorMsg}
@@ -905,20 +942,33 @@ function Auth({ mode, go, theme, toggleTheme }: { mode: 'login' | 'register' | '
         )}
         {verify && <div className="code-inputs">{[0,1,2,3,4,5].map((n)=><input key={n} inputMode="numeric" maxLength={1} aria-label={`Digit ${n+1}`} defaultValue={n<2 ? String(n+2) : ''}/>)}</div>}
 
-        {/* 2FA Verification Input */}
+        {/* 2FA Verification Input with Backup Code Switcher */}
         {require2FA && (
           <div style={{ margin: '16px 0 20px' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>
-              Authenticator or Backup Code
-            </label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 600 }}>
+                {useBackupCode ? 'Emergency Backup Code' : '6-Digit Authenticator Code'}
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setUseBackupCode(!useBackupCode)
+                  setTwoFactorCode('')
+                  setErrorMsg('')
+                }}
+                style={{ fontSize: '12px', color: '#6d55d8', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+              >
+                {useBackupCode ? 'Use Authenticator App Code' : 'Use Backup Code'}
+              </button>
+            </div>
             <input
               type="text"
               autoFocus
-              maxLength={10}
+              maxLength={useBackupCode ? 8 : 6}
               required
               value={twoFactorCode}
-              onChange={e => setTwoFactorCode(e.target.value.replace(/\s+/g, ''))}
-              placeholder="000000"
+              onChange={e => setTwoFactorCode(useBackupCode ? e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') : e.target.value.replace(/\D/g, ''))}
+              placeholder={useBackupCode ? 'A1B2C3D4' : '000000'}
               style={{
                 width: '100%',
                 fontSize: '22px',
@@ -935,7 +985,9 @@ function Auth({ mode, go, theme, toggleTheme }: { mode: 'login' | 'register' | '
               }}
             />
             <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px', textAlign: 'center' }}>
-              Open Google Authenticator, Microsoft Authenticator, or Authy to get your 6-digit code.
+              {useBackupCode
+                ? 'Enter one of the 8-character single-use emergency backup codes generated when enabling 2FA.'
+                : 'Open Google Authenticator, Microsoft Authenticator, or Authy to get your current 6-digit code.'}
             </div>
           </div>
         )}
@@ -5574,11 +5626,19 @@ function ProfilePage({ go, theme, toggleTheme }: { go: (p: Page) => void; theme:
 
 
 export default function App() {
+  const PROTECTED_PAGES: Page[] = ['dashboard', 'profile']
+
   const getPageFromHash = (): Page => {
     if (typeof window === 'undefined') return 'home'
     const raw = location.hash.slice(1).split('?')[0] as Page
     const validPages: Page[] = ['home', 'about', 'contact', 'login', 'register', 'forgot', 'verify', 'dashboard', 'profile']
-    return (validPages.includes(raw) ? raw : 'home') as Page
+    const resolved = (validPages.includes(raw) ? raw : 'home') as Page
+
+    // Route Protection Guard
+    if (PROTECTED_PAGES.includes(resolved) && !authService.isAuthenticated()) {
+      return 'login'
+    }
+    return resolved
   }
 
   const [page, setPage] = useState<Page>(getPageFromHash)
@@ -5598,8 +5658,88 @@ export default function App() {
   }, [theme])
 
   const toggleTheme = () => setTheme(prev => (prev === 'dark' ? 'light' : 'dark'))
-  const go = (p: Page) => { setPage(p); location.hash = p === 'home' ? '' : p; scrollTo(0,0) }
-  useEffect(() => { const fn=()=>setPage(getPageFromHash()); addEventListener('hashchange',fn); return()=>removeEventListener('hashchange',fn) },[])
+
+  const go = (p: Page) => {
+    if (PROTECTED_PAGES.includes(p) && !authService.isAuthenticated()) {
+      setPage('login')
+      location.hash = `login?redirect=${p}&reason=unauthorized`
+      scrollTo(0, 0)
+      return
+    }
+    setPage(p)
+    location.hash = p === 'home' ? '' : p
+    scrollTo(0, 0)
+  }
+
+  // Routing Guard on hash navigation
+  useEffect(() => {
+    const fn = () => {
+      const targetPage = getPageFromHash()
+      const raw = location.hash.slice(1).split('?')[0] as Page
+      if (PROTECTED_PAGES.includes(raw) && !authService.isAuthenticated()) {
+        location.hash = `login?redirect=${raw}&reason=unauthorized`
+        setPage('login')
+      } else {
+        setPage(targetPage)
+      }
+    }
+    window.addEventListener('hashchange', fn)
+    return () => window.removeEventListener('hashchange', fn)
+  }, [])
+
+  // User Activity Listeners & Inactivity Timeout Session Management
+  useEffect(() => {
+    const recordActivity = () => authService.touchActivity()
+    window.addEventListener('mousemove', recordActivity, { passive: true })
+    window.addEventListener('keydown', recordActivity, { passive: true })
+    window.addEventListener('click', recordActivity, { passive: true })
+    window.addEventListener('scroll', recordActivity, { passive: true })
+    window.addEventListener('touchstart', recordActivity, { passive: true })
+
+    // Periodic check every 30 seconds for 45-minute idle timeout & token validation
+    const interval = setInterval(async () => {
+      if (authService.isAuthenticated()) {
+        const lastActive = authService.getLastActive()
+        const idleDurationMs = Date.now() - lastActive
+        const MAX_IDLE_MS = 45 * 60 * 1000 // 45 minutes
+
+        if (idleDurationMs > MAX_IDLE_MS) {
+          authService.clearSession()
+          location.hash = 'login?expired=idle'
+          setPage('login')
+          return
+        }
+
+        // Validate token session with backend
+        const check = await authService.validateSession()
+        if (!check.valid) {
+          authService.clearSession()
+          location.hash = 'login?expired=session'
+          setPage('login')
+        }
+      }
+    }, 30000)
+
+    // Initial mount session validation for protected pages
+    if (authService.isAuthenticated()) {
+      authService.validateSession().then((check) => {
+        if (!check.valid && PROTECTED_PAGES.includes(page)) {
+          authService.clearSession()
+          location.hash = 'login?expired=session'
+          setPage('login')
+        }
+      })
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', recordActivity)
+      window.removeEventListener('keydown', recordActivity)
+      window.removeEventListener('click', recordActivity)
+      window.removeEventListener('scroll', recordActivity)
+      window.removeEventListener('touchstart', recordActivity)
+      clearInterval(interval)
+    }
+  }, [page])
 
   return (
     <div className={`app-root ${theme}`}>

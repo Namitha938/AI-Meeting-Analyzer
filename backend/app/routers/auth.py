@@ -5,6 +5,7 @@ import urllib.parse
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.storage import get_storage
 from app.models import User, Meeting, Comment
@@ -73,10 +74,13 @@ def login(user_in: UserLogin, db: Session = Depends(get_db)):
                 "requires_2fa": True,
             }
 
-        totp_valid = verify_totp_token(user.two_factor_secret or "", user_in.totp_code, valid_window=1)
-        if not totp_valid and user.backup_codes and user_in.totp_code.upper() in user.backup_codes:
+        clean_code = (user_in.totp_code or "").strip().upper()
+        totp_valid = verify_totp_token(user.two_factor_secret or "", clean_code, valid_window=1)
+        current_backup_codes = list(user.backup_codes or [])
+        if not totp_valid and current_backup_codes and clean_code in current_backup_codes:
             totp_valid = True
-            user.backup_codes.remove(user_in.totp_code.upper())
+            current_backup_codes.remove(clean_code)
+            user.backup_codes = list(current_backup_codes)
             db.commit()
 
         if not totp_valid:
@@ -91,6 +95,7 @@ def login(user_in: UserLogin, db: Session = Depends(get_db)):
         "token_type": "bearer",
         "user": user,
         "requires_2fa": False,
+        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     }
 
 @router.post("/google", response_model=Token)
@@ -126,6 +131,7 @@ def google_auth(auth_in: GoogleAuthRequest, db: Session = Depends(get_db)):
         "access_token": access_token,
         "token_type": "bearer",
         "user": user,
+        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     }
 
 @router.post("/cleanup-duplicates")
@@ -263,6 +269,49 @@ def reset_password(
     }
 
 # ==========================================
+# ==========================================
+# Session Management & Token Endpoints
+# ==========================================
+@router.get("/validate-session")
+def validate_session(current_user: User = Depends(get_current_user)):
+    """
+    Validates active JWT token session and returns current user with session validity metadata.
+    """
+    return {
+        "status": "active",
+        "valid": True,
+        "user": current_user,
+        "expires_in_minutes": settings.ACCESS_TOKEN_EXPIRE_MINUTES,
+        "two_factor_enabled": bool(current_user.two_factor_enabled),
+    }
+
+@router.post("/refresh-token", response_model=Token)
+def refresh_token(current_user: User = Depends(get_current_user)):
+    """
+    Renews access token for an active authenticated session.
+    """
+    new_token = create_access_token(
+        data={"sub": current_user.email, "role": current_user.role, "user_id": current_user.id}
+    )
+    return {
+        "access_token": new_token,
+        "token_type": "bearer",
+        "user": current_user,
+        "requires_2fa": False,
+        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    }
+
+@router.post("/logout")
+def logout_user(current_user: User = Depends(get_current_user)):
+    """
+    Logs out active user session and invalidates client session state.
+    """
+    return {
+        "status": "success",
+        "message": f"Successfully logged out session for {current_user.email}."
+    }
+
+# ==========================================
 # Two-Factor Authentication (2FA / TOTP)
 # ==========================================
 @router.post("/2fa/setup", response_model=TwoFactorSetupResponse)
@@ -281,8 +330,9 @@ def setup_two_factor(
     qr_code_url = f"https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data={urllib.parse.quote(otpauth_url)}"
     backup_codes = generate_backup_codes(5)
 
-    # Store pending secret
+    # Store pending secret and generated backup codes
     current_user.two_factor_secret = secret
+    current_user.backup_codes = list(backup_codes)
     db.commit()
 
     return TwoFactorSetupResponse(
@@ -330,6 +380,8 @@ def verify_two_factor(
     current_user.two_factor_secret = secret
     if not current_user.backup_codes:
         current_user.backup_codes = generate_backup_codes(5)
+    else:
+        current_user.backup_codes = list(current_user.backup_codes)
     db.commit()
 
     return TwoFactorVerifyResponse(

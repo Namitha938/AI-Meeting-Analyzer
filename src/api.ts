@@ -15,6 +15,24 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Auto-handle 401 Unauthorized errors and session expiration
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      const hadToken = Boolean(localStorage.getItem('meetora_token'))
+      authService.clearSession()
+      if (hadToken && typeof window !== 'undefined') {
+        const hash = window.location.hash.slice(1).split('?')[0]
+        if (hash === 'dashboard' || hash === 'profile') {
+          window.location.hash = `login?expired=session&redirect=${encodeURIComponent(hash)}`
+        }
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
 export interface User {
   id: number
   email: string
@@ -138,11 +156,8 @@ export const authService = {
 
   async login(data: { email: string; password: string; totp_code?: string }) {
     const res = await api.post('/auth/login', data)
-    if (res.data?.access_token) {
-      localStorage.setItem('meetora_token', res.data.access_token)
-      if (res.data.user) {
-        localStorage.setItem('meetora_user', JSON.stringify(res.data.user))
-      }
+    if (res.data?.access_token && res.data?.user) {
+      this.setSession(res.data.access_token, res.data.user, res.data.expires_in)
     }
     return res.data
   },
@@ -154,11 +169,8 @@ export const authService = {
         ...data,
         email: cleanEmail,
       })
-      if (res.data?.access_token) {
-        localStorage.setItem('meetora_token', res.data.access_token)
-        if (res.data.user) {
-          localStorage.setItem('meetora_user', JSON.stringify(res.data.user))
-        }
+      if (res.data?.access_token && res.data?.user) {
+        this.setSession(res.data.access_token, res.data.user, res.data.expires_in)
       }
       return res.data
     } catch (err) {
@@ -170,8 +182,7 @@ export const authService = {
         role: 'user',
         is_active: true,
       }
-      localStorage.setItem('meetora_token', 'meetora_session_' + Date.now())
-      localStorage.setItem('meetora_user', JSON.stringify(mockUser))
+      this.setSession('mock_jwt_token', mockUser, 7 * 24 * 3600)
       return { access_token: 'mock_jwt_token', token_type: 'bearer', user: mockUser }
     }
   },
@@ -186,18 +197,99 @@ export const authService = {
         status: 'success',
         message: 'Local and database deduplication verified: 0 duplicate accounts found.',
         removed_count: 0,
-        active_users: [this.getUser()?.email || 'jordan@meetora.ai'],
+        active_users: [this.getUser()?.email || 'user@meetora.ai'],
       }
     }
   },
 
-  logout() {
+  // Session Management
+  setSession(token: string, user: User, expiresInSeconds: number = 7 * 24 * 3600) {
+    localStorage.setItem('meetora_token', token)
+    localStorage.setItem('meetora_user', JSON.stringify(user))
+    const expiryMs = Date.now() + expiresInSeconds * 1000
+    localStorage.setItem('meetora_session_expiry', String(expiryMs))
+    localStorage.setItem('meetora_last_active', String(Date.now()))
+  },
+
+  clearSession() {
     localStorage.removeItem('meetora_token')
     localStorage.removeItem('meetora_user')
+    localStorage.removeItem('meetora_session_expiry')
+    localStorage.removeItem('meetora_last_active')
+  },
+
+  async logout() {
+    try {
+      if (this.getToken()) {
+        await api.post('/auth/logout')
+      }
+    } catch {}
+    this.clearSession()
+  },
+
+  isAuthenticated(): boolean {
+    const token = this.getToken()
+    const user = this.getUser()
+    if (!token || !user) return false
+
+    // Verify session expiration timestamp
+    const expiry = localStorage.getItem('meetora_session_expiry')
+    if (expiry && Date.now() > Number(expiry)) {
+      this.clearSession()
+      return false
+    }
+    return true
+  },
+
+  async validateSession(): Promise<{ valid: boolean; user?: User; two_factor_enabled?: boolean }> {
+    if (!this.getToken()) return { valid: false }
+    try {
+      const res = await api.get('/auth/validate-session')
+      if (res.data?.valid && res.data?.user) {
+        this.setUser(res.data.user)
+        return { valid: true, user: res.data.user, two_factor_enabled: res.data.two_factor_enabled }
+      }
+      return { valid: false }
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        this.clearSession()
+        return { valid: false }
+      }
+      // Offline fallback: if token exists and hasn't expired, retain session
+      const user = this.getUser()
+      if (user && this.isAuthenticated()) {
+        return { valid: true, user, two_factor_enabled: user.two_factor_enabled }
+      }
+      return { valid: false }
+    }
+  },
+
+  async refreshToken(): Promise<string | null> {
+    try {
+      const res = await api.post('/auth/refresh-token')
+      if (res.data?.access_token) {
+        this.setSession(res.data.access_token, res.data.user || this.getUser()!, res.data.expires_in)
+        return res.data.access_token
+      }
+    } catch {}
+    return null
+  },
+
+  touchActivity() {
+    if (this.isAuthenticated()) {
+      localStorage.setItem('meetora_last_active', String(Date.now()))
+    }
+  },
+
+  getLastActive(): number {
+    return Number(localStorage.getItem('meetora_last_active') || Date.now())
   },
 
   async getMe(): Promise<User> {
     const res = await api.get('/auth/me')
+    if (res.data) {
+      this.setUser(res.data)
+    }
     return res.data
   },
 
@@ -213,27 +305,16 @@ export const authService = {
         if (u && u.email) return u
       } catch {}
     }
-    const defaultUser: User = {
-      id: 4,
-      email: 'namitha8411@gmail.com',
-      full_name: 'Namitha Singu',
-      role: 'admin',
-      is_active: true,
-      job_title: 'Lead AI Engineer / Product Lead',
-      avatar: 'NS',
-      avatar_url: '',
-    }
-    try {
-      localStorage.setItem('meetora_user', JSON.stringify(defaultUser))
-      if (!localStorage.getItem('meetora_token')) {
-        localStorage.setItem('meetora_token', 'meetora_session_namitha_' + Date.now())
-      }
-    } catch {}
-    return defaultUser
+    return null
   },
 
   setUser(user: Partial<User>) {
-    const current = this.getUser() || {}
+    const current = this.getUser() || {
+      id: 0,
+      email: '',
+      role: 'user',
+      is_active: true,
+    }
     const updated = { ...current, ...user }
     localStorage.setItem('meetora_user', JSON.stringify(updated))
     return updated

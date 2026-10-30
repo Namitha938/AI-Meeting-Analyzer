@@ -66,6 +66,7 @@ class Token(BaseModel):
     token_type: str = "bearer"
     user: Optional[UserResponse] = None
     requires_2fa: Optional[bool] = False
+    expires_in: Optional[int] = None
 
 class TokenData(BaseModel):
     email: Optional[str] = None
