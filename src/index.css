@@ -951,3 +951,537 @@ div[style*="position: fixed"][style*="inset: 0"] > div {
 .success-icon-wrap {
   animation: check-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+/* ==========================================================================
+   MEETORA COMPREHENSIVE ANIMATION SYSTEM
+   GPU-accelerated pure CSS transitions & keyframes
+   ========================================================================== */
+
+/* 1. Keyframe Definitions */
+@keyframes meeting-card-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes page-fade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pop-overshoot {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  70% {
+    transform: scale(1.16);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes filter-pill-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  70% {
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes float-sparkle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(124, 92, 255, 0.65), 0 10px 30px rgba(124, 58, 237, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 16px rgba(124, 92, 255, 0), 0 10px 30px rgba(124, 58, 237, 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(124, 92, 255, 0), 0 10px 30px rgba(124, 58, 237, 0.45);
+  }
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* 2. Reusable Utility Classes */
+.anim-fade-up {
+  animation: meeting-card-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.anim-fade-in {
+  animation: page-fade 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.anim-slide-left {
+  animation: slide-in-left 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.anim-pop {
+  animation: pop-overshoot 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.anim-pulse {
+  animation: badge-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.anim-float {
+  animation: float-sparkle 3s ease-in-out infinite;
+}
+
+.hover-lift {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(124, 92, 255, 0.24);
+  border-color: #8b5cf6 !important;
+}
+
+.btn-anim {
+  transition: transform 150ms ease, filter 150ms ease, box-shadow 150ms ease, background-color 150ms ease !important;
+}
+.btn-anim:hover {
+  transform: translateY(-1px) !important;
+  filter: brightness(1.1) !important;
+}
+.btn-anim:active {
+  transform: scale(0.96) !important;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.14) 50%, rgba(255, 255, 255, 0.05) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s infinite ease-in-out;
+  border-radius: 6px;
+}
+.app-root:not(.dark) .skeleton,
+.dashboard:not(.dark) .skeleton,
+body:not(.dark) .skeleton {
+  background: linear-gradient(90deg, #edeaf3 25%, #ded8e8 50%, #edeaf3 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s infinite ease-in-out;
+}
+
+/* 3. Meetings Hub Specific Animation Rules */
+.meeting-card-anim {
+  animation: meeting-card-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+  will-change: transform, opacity;
+}
+
+.meeting-card-anim:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 12px 32px rgba(124, 92, 255, 0.24), 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+  border-color: #7c5cff !important;
+}
+
+.meetings-header-title {
+  animation: meeting-card-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.meetings-header-subtitle {
+  animation: meeting-card-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
+}
+
+.filter-pill-anim {
+  animation: filter-pill-pop 0.36s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.15s ease !important;
+}
+
+.filter-pill-anim:hover {
+  transform: translateY(-1px);
+}
+
+.filter-pill-anim:active {
+  transform: scale(0.95);
+}
+
+/* 4. Sidebar Nav Items & Overshoot Pop Badges */
+.sidebar nav button {
+  animation: slide-in-left 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.18s ease, box-shadow 0.2s ease !important;
+}
+
+.sidebar nav:first-of-type button:nth-of-type(1) { animation-delay: 0ms; }
+.sidebar nav:first-of-type button:nth-of-type(2) { animation-delay: 50ms; }
+.sidebar nav:first-of-type button:nth-of-type(3) { animation-delay: 100ms; }
+.sidebar nav:first-of-type button:nth-of-type(4) { animation-delay: 150ms; }
+.sidebar nav:first-of-type button:nth-of-type(5) { animation-delay: 200ms; }
+.sidebar .side-bottom button:nth-of-type(1) { animation-delay: 250ms; }
+.sidebar .side-bottom button:nth-of-type(2) { animation-delay: 300ms; }
+.sidebar .side-bottom button:nth-of-type(3) { animation-delay: 350ms; }
+
+.sidebar nav button:hover {
+  transform: translateX(3px);
+}
+.sidebar nav button:active {
+  transform: scale(0.98);
+}
+
+.sidebar nav button i,
+.tiny-avatars i,
+.avatars i,
+.badge-pop {
+  animation: pop-overshoot 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tiny-avatars i:nth-child(1) { animation-delay: 40ms; }
+.tiny-avatars i:nth-child(2) { animation-delay: 80ms; }
+.tiny-avatars i:nth-child(3) { animation-delay: 120ms; }
+
+/* 5. Floating AI Sparkle Button */
+.floating-ai-sparkle-btn {
+  animation: float-sparkle 3s ease-in-out infinite, pulse-ring 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+  will-change: transform, box-shadow;
+}
+
+/* 6. Page / Route Transitions */
+.page-transition {
+  animation: page-fade 250ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  width: 100%;
+}
+
+/* 7. Theme Toggle Transition (300ms) */
+body, .app-root, .dashboard, .sidebar, .dash-main, .panel, .landing, header, footer, .settings-card, .meeting-card {
+  transition: background-color 300ms ease, color 300ms ease, border-color 300ms ease;
+}
+
+/* 8. Action Items Hub Animations */
+@keyframes task-row-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes check-bounce {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.22);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.task-item-card {
+  animation: task-row-slide-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease !important;
+  will-change: transform, opacity;
+}
+
+.task-item-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 10px 24px rgba(109, 85, 216, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+  border-color: #8b5cf6 !important;
+}
+
+.task-check-btn {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.18s ease, border-color 0.18s ease !important;
+}
+
+.task-check-btn:hover {
+  transform: scale(1.12);
+}
+
+.task-check-btn:active {
+  transform: scale(0.9);
+}
+
+.task-check-btn.checked svg {
+  animation: check-bounce 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.stat-metric-card {
+  animation: task-row-slide-up 0.48s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease !important;
+}
+
+.stat-metric-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 10px 22px rgba(109, 85, 216, 0.12) !important;
+  border-color: #a78bfa !important;
+}
+
+/* 9. Team Workspace & Collaborators Animations */
+.team-member-card {
+  animation: task-row-slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease !important;
+  will-change: transform, opacity;
+}
+
+.team-member-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 14px 32px rgba(124, 92, 255, 0.2), 0 4px 10px rgba(0, 0, 0, 0.04) !important;
+  border-color: #7c5cff !important;
+}
+
+.team-avatar-pulse {
+  animation: pop-overshoot 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.team-member-card:hover .team-avatar-pulse {
+  transform: scale(1.08) rotate(3deg);
+}
+
+.team-status-badge {
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+
+.team-status-badge.active {
+  animation: badge-pulse 2.8s ease-in-out infinite;
+}
+
+.team-stats-box {
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.team-member-card:hover .team-stats-box {
+  background: rgba(109, 85, 216, 0.06);
+}
+
+/* 10. Admin Panel Animations */
+@keyframes modal-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-dialog-zoom {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.admin-modal-backdrop {
+  animation: modal-backdrop-in 0.22s ease-out both;
+}
+
+.admin-modal-dialog {
+  animation: modal-dialog-zoom 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+.admin-tab-content {
+  animation: page-fade 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.admin-table-row {
+  animation: task-row-slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: background-color 0.18s ease;
+}
+
+.admin-table-row:hover {
+  background-color: rgba(124, 92, 255, 0.06) !important;
+}
+
+.admin-spec-card {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease !important;
+}
+
+.admin-spec-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(124, 92, 255, 0.12);
+  border-color: #8b5cf6 !important;
+}
+
+.confusion-cell {
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.confusion-cell:hover {
+  transform: scale(1.08);
+}
+
+/* 11. Calendar & AI Chatbot Animations */
+@keyframes drawer-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes chat-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes typing-glow {
+  0%, 100% {
+    opacity: 0.65;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+.floating-chat-drawer {
+  animation: drawer-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: bottom right;
+}
+
+.chat-bubble-anim {
+  animation: chat-bubble-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+.chat-typing-indicator {
+  animation: typing-glow 1.5s ease-in-out infinite;
+}
+
+.calendar-event-card {
+  animation: task-row-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease !important;
+  will-change: transform, opacity;
+}
+
+.calendar-event-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 22px rgba(124, 92, 255, 0.14) !important;
+  border-color: #7c3aed !important;
+}
+
+/* 12. Live Recorder, Enterprise Integrations & Compliance Animations */
+@keyframes record-blink {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.15);
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+}
+
+.anim-record-pulse {
+  animation: record-blink 1.4s ease-in-out infinite;
+}
+
+@keyframes voiceprint-scan {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.anim-voiceprint-scan {
+  background: linear-gradient(90deg, #7c3aed, #a855f7, #3b82f6, #7c3aed);
+  background-size: 300% 300%;
+  animation: voiceprint-scan 4s ease infinite;
+}
+
+@keyframes ping-radar {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.anim-radar-ping {
+  animation: ping-radar 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* 13. Accessibility: Prefers-reduced-motion override */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

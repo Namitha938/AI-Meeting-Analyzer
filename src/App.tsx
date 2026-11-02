@@ -1,6 +1,29 @@
 import { FormEvent, ReactNode, useEffect, useRef, useState } from 'react'
-import { authService, meetingService, calendarService, exportService, adminService, teamService, MeetingItem, ActionItemData } from './api'
+import {
+  authService,
+  meetingService,
+  calendarService,
+  exportService,
+  adminService,
+  teamService,
+  integrationService,
+  complianceService,
+  voiceprintService,
+  MeetingItem,
+  ActionItemData
+} from './api'
 import { AnalyticsCharts } from './components/AnalyticsCharts'
+import { LiveMeetingRecorderModal } from './components/LiveMeetingRecorderModal'
+import { IntegrationsHubView } from './components/IntegrationsHubView'
+import { ComplianceAuditVault } from './components/ComplianceAuditVault'
+import { TrackedKeywordsView } from './components/TrackedKeywordsView'
+import { VoiceprintBiometricsTab } from './components/VoiceprintBiometricsTab'
+import { DeleteMeetingModal } from './components/DeleteMeetingModal'
+import { EditMeetingModal } from './components/EditMeetingModal'
+import { EditTeamModal } from './components/EditTeamModal'
+import { DeleteTeamModal } from './components/DeleteTeamModal'
+import { TeamMembersModal } from './components/TeamMembersModal'
+import { TeamData } from './api'
 import { loginWithGooglePopup } from './firebase'
 
 type Page = 'home' | 'about' | 'contact' | 'login' | 'register' | 'forgot' | 'verify' | 'dashboard' | 'profile'
@@ -43,6 +66,8 @@ const Icon = ({ name, size = 20 }: { name: string; size?: number }) => {
     shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>,
     zap: <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>,
     heart: <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>,
+    trash: <><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></>,
+    pencil: <><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></>,
   }
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{paths[name]}</svg>
 }
@@ -1170,11 +1195,52 @@ function Auth({ mode, go, theme, toggleTheme }: { mode: 'login' | 'register' | '
 }
 
 const defaultMockMeetings = [
-  {id: 1, title:'Weekly product sync', time:'Today, 10:00 AM', dur:'42 min', people:['SK','ML','+4'], tag:'Product', color:'violet'},
-  {id: 2, title:'Customer discovery — Acme', time:'Yesterday, 2:30 PM', dur:'56 min', people:['JM','AL','+2'], tag:'Research', color:'blue'},
-  {id: 3, title:'Q3 marketing planning', time:'Jun 24, 11:00 AM', dur:'1h 12m', people:['DK','RS','+6'], tag:'Planning', color:'orange'},
-  {id: 4, title:'Design critique', time:'Jun 23, 3:00 PM', dur:'38 min', people:['SK','NP','+3'], tag:'Design', color:'pink'},
+  {id: 1, user_id: 1, title:'Weekly product sync', time:'Today, 10:00 AM', dur:'42 min', people:['SK','ML','+4'], tag:'Product', color:'violet'},
+  {id: 2, user_id: 1, title:'Customer discovery — Acme', time:'Yesterday, 2:30 PM', dur:'56 min', people:['JM','AL','+2'], tag:'Research', color:'blue'},
+  {id: 3, user_id: 1, title:'Q3 marketing planning', time:'Jun 24, 11:00 AM', dur:'1h 12m', people:['DK','RS','+6'], tag:'Planning', color:'orange'},
+  {id: 4, user_id: 1, title:'Design critique', time:'Jun 23, 3:00 PM', dur:'38 min', people:['SK','NP','+3'], tag:'Design', color:'pink'},
 ]
+
+function MeetingsSkeleton({ theme }: { theme: 'light' | 'dark' }) {
+  const cardBg = theme === 'dark' ? '#1a162b' : '#fff'
+  const borderColor = theme === 'dark' ? '#2b2349' : '#e6e2ec'
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+      {[1, 2, 3, 4, 5, 6].map((i) => (
+        <div
+          key={i}
+          style={{
+            background: cardBg,
+            border: `1px solid ${borderColor}`,
+            borderRadius: '14px',
+            padding: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            minHeight: '210px',
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div className="skeleton" style={{ width: '64px', height: '22px', borderRadius: '12px' }} />
+              <div className="skeleton" style={{ width: '68px', height: '14px', borderRadius: '4px' }} />
+            </div>
+            <div className="skeleton" style={{ width: '82%', height: '20px', marginBottom: '10px' }} />
+            <div className="skeleton" style={{ width: '50%', height: '14px', marginBottom: '16px' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px' }}>
+              <div className="skeleton" style={{ width: '48px', height: '24px', borderRadius: '12px' }} />
+              <div className="skeleton" style={{ width: '80px', height: '12px' }} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', borderTop: `1px solid ${theme === 'dark' ? '#261f42' : '#f0eef4'}`, paddingTop: '14px' }}>
+            <div className="skeleton" style={{ flex: 1, height: '32px', borderRadius: '8px' }} />
+            <div className="skeleton" style={{ width: '56px', height: '32px', borderRadius: '8px' }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: 'light' | 'dark'; toggleTheme: () => void }) {
   const [query, setQuery] = useState('')
@@ -1205,8 +1271,29 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
   const [showCalendarModal, setShowCalendarModal] = useState(false)
   const [calendarEvents, setCalendarEvents] = useState<any[]>([])
   const [reminderNotice, setReminderNotice] = useState<string>('')
-  const [dashView, setDashView] = useState<'overview' | 'meetings' | 'tasks' | 'team' | 'chatbot'>('overview')
+  const [dashView, setDashView] = useState<'overview' | 'meetings' | 'tasks' | 'team' | 'chatbot' | 'integrations'>('overview')
+  const [showRecorderModal, setShowRecorderModal] = useState<boolean>(false)
+  const [meetingToDelete, setMeetingToDelete] = useState<any | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false)
+  const [isDeletingMeeting, setIsDeletingMeeting] = useState<boolean>(false)
+  const [isBulkDeleteModal, setIsBulkDeleteModal] = useState<boolean>(false)
+  const [selectedMeetingIds, setSelectedMeetingIds] = useState<number[]>([])
+  const [activeMenuMeetingId, setActiveMenuMeetingId] = useState<number | null>(null)
+  const [deleteNotice, setDeleteNotice] = useState<{
+    type: 'success' | 'error' | 'preview'
+    message: string
+  } | null>(null)
+  const [meetingToEdit, setMeetingToEdit] = useState<any | null>(null)
+  const [showEditModal, setShowEditModal] = useState<boolean>(false)
+  const [isEditingSummary, setIsEditingSummary] = useState<boolean>(false)
+  const [summaryEditOverview, setSummaryEditOverview] = useState<string>('')
+  const [summaryEditTakeaways, setSummaryEditTakeaways] = useState<string>('')
+  const [isSavingSummary, setIsSavingSummary] = useState<boolean>(false)
+  const [editingTranscriptId, setEditingTranscriptId] = useState<number | null>(null)
+  const [editingTranscriptText, setEditingTranscriptText] = useState<string>('')
+  const [isSavingTranscript, setIsSavingTranscript] = useState<boolean>(false)
   const [meetingTagFilter, setMeetingTagFilter] = useState<string>('All')
+  const [meetingsLoading, setMeetingsLoading] = useState<boolean>(true)
   const [taskStatusFilter, setTaskStatusFilter] = useState<'All' | 'Pending' | 'Completed'>('All')
   const [taskPriorityFilter, setTaskPriorityFilter] = useState<string>('All')
   const [showInviteModal, setShowInviteModal] = useState<boolean>(false)
@@ -1224,6 +1311,10 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
   const [newTeamName, setNewTeamName] = useState<string>('')
   const [newTeamDesc, setNewTeamDesc] = useState<string>('')
   const [newTeamColor, setNewTeamColor] = useState<string>('violet')
+  const [editingTeam, setEditingTeam] = useState<TeamData | null>(null)
+  const [deletingTeam, setDeletingTeam] = useState<TeamData | null>(null)
+  const [managingMembersTeam, setManagingMembersTeam] = useState<TeamData | null>(null)
+  const [teamMenuOpenId, setTeamMenuOpenId] = useState<number | null>(null)
 
   const [showCreateMeetingModal, setShowCreateMeetingModal] = useState<boolean>(false)
   const [newMeetingTitle, setNewMeetingTitle] = useState<string>('')
@@ -1246,7 +1337,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
   const [adminMeetings, setAdminMeetings] = useState<any[]>([])
   const [adminLoading, setAdminLoading] = useState(false)
   const [adminNotice, setAdminNotice] = useState<string>('')
-  const [adminTab, setAdminTab] = useState<'overview' | 'users' | 'meetings' | 'evaluation' | 'registry' | 'training'>('overview')
+  const [adminTab, setAdminTab] = useState<'overview' | 'users' | 'meetings' | 'evaluation' | 'registry' | 'training' | 'compliance' | 'keywords'>('overview')
   const [adminEval, setAdminEval] = useState<any>(null)
   const [adminModels, setAdminModels] = useState<any[]>([])
   const [adminCorrections, setAdminCorrections] = useState<any[]>([])
@@ -1435,11 +1526,13 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
   useEffect(() => {
     let mounted = true
     const fetchData = async () => {
+      setMeetingsLoading(true)
       try {
         const meetingsData = await meetingService.getMeetings()
         if (mounted && meetingsData && meetingsData.length > 0) {
           const mapped = meetingsData.map((m: any) => ({
             id: m.id,
+            user_id: m.user_id,
             title: m.title,
             time: new Date(m.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
             dur: `${Math.round(m.duration_seconds / 60) || 42} min`,
@@ -1452,6 +1545,12 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
         }
       } catch (e) {
         console.warn('FastAPI backend not reached for meetings, using local state.', e)
+      } finally {
+        if (mounted) {
+          setTimeout(() => {
+            if (mounted) setMeetingsLoading(false)
+          }, 400)
+        }
       }
 
       try {
@@ -1466,6 +1565,18 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
             status: a.status,
           }))
           setTasksList(mappedTasks)
+        }
+      } catch (e) {
+        // keep defaults
+      }
+
+      try {
+        const teams = await teamService.getTeams()
+        if (mounted && teams && teams.length > 0) {
+          setTeamsList(teams)
+          if (!teams.some((t: any) => t.id === activeTeamId)) {
+            setActiveTeamId(teams[0].id)
+          }
         }
       } catch (e) {
         // keep defaults
@@ -1863,24 +1974,83 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
     }
   }
 
-  const handleCreateTeam = (e: FormEvent) => {
+  const handleCreateTeam = async (e: FormEvent) => {
     e.preventDefault()
     if (!newTeamName.trim()) return
-    const team = {
-      id: Date.now(),
-      name: newTeamName.trim(),
-      description: newTeamDesc.trim() || 'Workspace collaborative team',
-      color: newTeamColor,
-      lead: currentUser?.full_name || 'Jordan Davis',
-      membersCount: 1,
+    try {
+      const created = await teamService.createTeam({
+        name: newTeamName.trim(),
+        description: newTeamDesc.trim() || undefined,
+        color: newTeamColor,
+      })
+      setTeamsList(prev => [created, ...prev])
+      setActiveTeamId(created.id)
+      setReminderNotice(`✓ Team "${created.name}" created successfully!`)
+    } catch (err: any) {
+      const team = {
+        id: Date.now(),
+        name: newTeamName.trim(),
+        description: newTeamDesc.trim() || 'Workspace collaborative team',
+        color: newTeamColor,
+        lead: currentUser?.full_name || 'Jordan Davis',
+        membersCount: 1,
+        my_role: 'owner',
+      }
+      setTeamsList(prev => [team, ...prev])
+      setActiveTeamId(team.id)
+      setReminderNotice(`✓ Team "${team.name}" created!`)
+    } finally {
+      setNewTeamName('')
+      setNewTeamDesc('')
+      setShowCreateTeamModal(false)
+      setTimeout(() => setReminderNotice(''), 4500)
     }
-    setTeamsList(prev => [...prev, team])
-    setActiveTeamId(team.id)
-    setNewTeamName('')
-    setNewTeamDesc('')
-    setShowCreateTeamModal(false)
-    setReminderNotice(`✓ Team "${team.name}" created successfully!`)
-    setTimeout(() => setReminderNotice(''), 4500)
+  }
+
+  const handleSaveEditedTeam = async (payload: { name: string; color: string; description?: string }) => {
+    if (!editingTeam) return
+    const updated = await teamService.updateTeam(editingTeam.id, payload)
+    setTeamsList(prev => prev.map(t => t.id === editingTeam.id ? { ...t, ...updated } : t))
+    setReminderNotice(`✓ Team settings for "${updated.name}" saved!`)
+    setTimeout(() => setReminderNotice(''), 4000)
+  }
+
+  const handleDeleteTeamConfirm = async (meetingsAction: 'move' | 'delete') => {
+    if (!deletingTeam) return
+    const teamName = deletingTeam.name
+    const targetId = deletingTeam.id
+    await teamService.deleteTeam(targetId, meetingsAction)
+    setTeamsList(prev => {
+      const nextList = prev.filter(t => t.id !== targetId)
+      if (activeTeamId === targetId && nextList.length > 0) {
+        setActiveTeamId(nextList[0].id)
+      }
+      return nextList
+    })
+    setReminderNotice(`✓ Team "${teamName}" permanently deleted. Meetings ${meetingsAction === 'move' ? 'moved to personal workspace' : 'purged'}.`)
+    setTimeout(() => setReminderNotice(''), 5000)
+  }
+
+  const handleLeaveTeamDirect = async (team: any) => {
+    if (team.my_role === 'owner') {
+      alert('The team owner cannot leave the team. Please transfer ownership to another member first.')
+      return
+    }
+    if (!confirm(`Are you sure you want to leave team "${team.name}"?`)) return
+    try {
+      await teamService.leaveTeam(team.id)
+      setTeamsList(prev => {
+        const nextList = prev.filter(t => t.id !== team.id)
+        if (activeTeamId === team.id && nextList.length > 0) {
+          setActiveTeamId(nextList[0].id)
+        }
+        return nextList
+      })
+      setReminderNotice(`✓ Successfully left team "${team.name}".`)
+      setTimeout(() => setReminderNotice(''), 4000)
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || 'Failed to leave team')
+    }
   }
 
   const handleCreateMeeting = async (e: FormEvent) => {
@@ -2008,6 +2178,484 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
     }
   }
 
+  useEffect(() => {
+    if (!activeMenuMeetingId) return
+    const handleClickOutside = () => {
+      setActiveMenuMeetingId(null)
+    }
+    window.addEventListener('click', handleClickOutside)
+    return () => window.removeEventListener('click', handleClickOutside)
+  }, [activeMenuMeetingId])
+
+  const canDeleteMeeting = (m: any) => {
+    const user = authService.getUser()
+    if (!user) return true
+    if (user.role === 'admin') return true
+    if (m?.user_id && user?.id) return m.user_id === user.id
+    return true
+  }
+
+  const canEditMeeting = (m: any) => {
+    const user = authService.getUser()
+    if (!user) return true
+    if (user.role === 'admin') return true
+    if (m?.user_id && user?.id) return m.user_id === user.id
+    return true
+  }
+
+  // Warn before leaving if there are unsaved edits
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isEditingSummary || editingTranscriptId !== null) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [isEditingSummary, editingTranscriptId])
+
+  const handleOpenEditMeeting = (m: any) => {
+    if (isMeetingProcessing(m)) {
+      setDeleteNotice({
+        type: 'error',
+        message: 'Wait for processing to finish or cancel it first',
+      })
+      setTimeout(() => setDeleteNotice(null), 4500)
+      return
+    }
+    setMeetingToEdit(m)
+    setShowEditModal(true)
+    setActiveMenuMeetingId(null)
+  }
+
+  const handleSaveMeetingDetails = async (updates: any) => {
+    if (!meetingToEdit) return
+    const id = meetingToEdit.id
+    try {
+      const res = await meetingService.updateMeeting(id, updates)
+      setMeetingsList((prev) =>
+        prev.map((m) =>
+          m.id === id
+            ? {
+                ...m,
+                title: res.title || updates.title,
+                tag: updates.tag || (res.tags && res.tags[0]) || m.tag,
+                tags: res.tags || [updates.tag],
+                description: res.description !== undefined ? res.description : updates.description,
+                scheduled_at: res.scheduled_at,
+                updated_at: res.updated_at,
+              }
+            : m
+        )
+      )
+      if (selectedMeeting && selectedMeeting.id === id) {
+        setSelectedMeeting((prev: any) => ({
+          ...prev,
+          title: res.title || updates.title,
+          tag: updates.tag || (res.tags && res.tags[0]) || prev.tag,
+          tags: res.tags || [updates.tag],
+          description: res.description !== undefined ? res.description : updates.description,
+          scheduled_at: res.scheduled_at,
+          updated_at: res.updated_at,
+        }))
+      }
+      setDeleteNotice({
+        type: 'success',
+        message: `Meeting "${updates.title}" updated successfully.`,
+      })
+      setTimeout(() => setDeleteNotice(null), 4000)
+    } catch (err: any) {
+      if (err?.response?.status === 409) {
+        throw err
+      }
+      // Offline preview mode fallback
+      setMeetingsList((prev) =>
+        prev.map((m) =>
+          m.id === id
+            ? {
+                ...m,
+                title: updates.title,
+                tag: updates.tag || m.tag,
+                description: updates.description,
+                scheduled_at: updates.scheduled_at,
+              }
+            : m
+        )
+      )
+      if (selectedMeeting && selectedMeeting.id === id) {
+        setSelectedMeeting((prev: any) => ({
+          ...prev,
+          title: updates.title,
+          tag: updates.tag || prev.tag,
+          description: updates.description,
+          scheduled_at: updates.scheduled_at,
+        }))
+      }
+      setDeleteNotice({
+        type: 'preview',
+        message: `Meeting details updated (preview mode)`,
+      })
+      setTimeout(() => setDeleteNotice(null), 4000)
+    }
+  }
+
+  const handleStartEditSummary = () => {
+    if (!selectedMeeting) return
+    if (isMeetingProcessing(selectedMeeting)) {
+      setDeleteNotice({
+        type: 'error',
+        message: 'Wait for processing to finish or cancel it first',
+      })
+      setTimeout(() => setDeleteNotice(null), 4500)
+      return
+    }
+    const currentOverview = selectedMeeting.summary?.overview || ''
+    const currentTakeaways = (selectedMeeting.summary?.key_takeaways || []).join('\n')
+    setSummaryEditOverview(currentOverview)
+    setSummaryEditTakeaways(currentTakeaways)
+    setIsEditingSummary(true)
+  }
+
+  const handleSaveSummary = async () => {
+    if (!selectedMeeting) return
+    setIsSavingSummary(true)
+    const takeawaysList = summaryEditTakeaways
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean)
+    const payload = {
+      overview: summaryEditOverview.trim(),
+      key_takeaways: takeawaysList,
+      updated_at: selectedMeeting.summary?.updated_at || selectedMeeting.updated_at,
+    }
+    try {
+      const res = await meetingService.updateMeetingSummary(selectedMeeting.id, payload)
+      setSelectedMeeting((prev: any) => ({
+        ...prev,
+        summary: {
+          ...prev.summary,
+          overview: res.overview,
+          key_takeaways: res.key_takeaways,
+          edited_by_user: true,
+          updated_at: res.updated_at,
+          updated_by: res.updated_by,
+        },
+      }))
+      setIsEditingSummary(false)
+      setDeleteNotice({
+        type: 'success',
+        message: 'Executive summary successfully updated.',
+      })
+      setTimeout(() => setDeleteNotice(null), 4000)
+    } catch (err: any) {
+      if (err?.response?.status === 409) {
+        setDeleteNotice({
+          type: 'error',
+          message: 'This meeting was changed by someone else. Reload to see the latest version.',
+        })
+        setTimeout(() => setDeleteNotice(null), 5000)
+        return
+      }
+      // Offline preview mode fallback
+      setSelectedMeeting((prev: any) => ({
+        ...prev,
+        summary: {
+          ...prev.summary,
+          overview: payload.overview,
+          key_takeaways: payload.key_takeaways,
+          edited_by_user: true,
+          updated_at: new Date().toISOString(),
+          updated_by: 'You',
+        },
+      }))
+      setIsEditingSummary(false)
+      setDeleteNotice({
+        type: 'preview',
+        message: 'Summary updated (preview mode)',
+      })
+      setTimeout(() => setDeleteNotice(null), 4000)
+    } finally {
+      setIsSavingSummary(false)
+    }
+  }
+
+  const handleRegenerateSummary = async () => {
+    if (!selectedMeeting) return
+    if (selectedMeeting.summary?.edited_by_user) {
+      const confirmed = window.confirm(
+        'This summary contains custom human edits. Regenerating with AI will replace your text. Do you want to proceed?'
+      )
+      if (!confirmed) return
+    }
+    try {
+      const res = await meetingService.regenerateMeetingSummary(selectedMeeting.id)
+      setSelectedMeeting((prev: any) => ({
+        ...prev,
+        summary: {
+          ...prev.summary,
+          overview: res.overview,
+          key_takeaways: res.key_takeaways,
+          next_steps: res.next_steps,
+          edited_by_user: false,
+          updated_at: res.updated_at,
+          updated_by: 'AI Pipeline',
+        },
+      }))
+      setDeleteNotice({
+        type: 'success',
+        message: 'Executive summary regenerated with AI pipeline.',
+      })
+      setTimeout(() => setDeleteNotice(null), 4000)
+    } catch {
+      // Offline fallback
+      setSelectedMeeting((prev: any) => ({
+        ...prev,
+        summary: {
+          ...prev.summary,
+          overview: 'Team aligned on release milestones and prioritized mobile onboarding flows.',
+          key_takeaways: [
+            'Design handoff is scheduled for Friday.',
+            'Engineering will begin implementation next Monday.',
+            'Beta release target confirmed for August 12.',
+          ],
+          edited_by_user: false,
+        },
+      }))
+      setDeleteNotice({
+        type: 'preview',
+        message: 'Summary regenerated with AI (preview mode)',
+      })
+      setTimeout(() => setDeleteNotice(null), 4000)
+    }
+  }
+
+  const handleStartEditTranscript = (line: any) => {
+    if (isMeetingProcessing(selectedMeeting)) {
+      setDeleteNotice({
+        type: 'error',
+        message: 'Wait for processing to finish or cancel it first',
+      })
+      setTimeout(() => setDeleteNotice(null), 4500)
+      return
+    }
+    setEditingTranscriptId(line.id)
+    setEditingTranscriptText(line.text)
+  }
+
+  const handleSaveTranscriptLine = async (lineId: number) => {
+    if (!selectedMeeting || !editingTranscriptText.trim()) return
+    setIsSavingTranscript(true)
+    const newText = editingTranscriptText.trim()
+    try {
+      const res = await meetingService.updateTranscriptLine(selectedMeeting.id, lineId, {
+        text: newText,
+      })
+      setSelectedMeeting((prev: any) => ({
+        ...prev,
+        transcripts: (prev.transcripts || []).map((t: any) =>
+          t.id === lineId ? { ...t, text: res.text || newText, confidence: 1.0 } : t
+        ),
+      }))
+      setEditingTranscriptId(null)
+      setDeleteNotice({
+        type: 'success',
+        message: 'Transcript line updated & re-indexed for AI search.',
+      })
+      setTimeout(() => setDeleteNotice(null), 4000)
+    } catch {
+      // Offline preview mode fallback
+      setSelectedMeeting((prev: any) => ({
+        ...prev,
+        transcripts: (prev.transcripts || []).map((t: any) =>
+          t.id === lineId ? { ...t, text: newText, confidence: 1.0 } : t
+        ),
+      }))
+      setEditingTranscriptId(null)
+      setDeleteNotice({
+        type: 'preview',
+        message: 'Transcript line corrected (preview mode)',
+      })
+      setTimeout(() => setDeleteNotice(null), 4000)
+    } finally {
+      setIsSavingTranscript(false)
+    }
+  }
+
+  const isMeetingProcessing = (m: any) => {
+    const s = String(m?.status || '').toLowerCase()
+    return s === 'processing' || s === 'transcribing' || s === 'diarizing' || s === 'analyzing'
+  }
+
+  const handleOpenDeleteSingle = (m: any) => {
+    if (isMeetingProcessing(m)) {
+      setDeleteNotice({
+        type: 'error',
+        message: 'Wait for processing to finish or cancel it first',
+      })
+      setTimeout(() => setDeleteNotice(null), 4500)
+      return
+    }
+    setMeetingToDelete(m)
+    setIsBulkDeleteModal(false)
+    setShowDeleteModal(true)
+    setActiveMenuMeetingId(null)
+  }
+
+  const handleOpenBulkDelete = () => {
+    if (selectedMeetingIds.length === 0) return
+    const processing = meetingsList.filter(
+      (m) => selectedMeetingIds.includes(m.id) && isMeetingProcessing(m)
+    )
+    if (processing.length > 0) {
+      setDeleteNotice({
+        type: 'error',
+        message: 'Wait for processing to finish or cancel it first',
+      })
+      setTimeout(() => setDeleteNotice(null), 4500)
+      return
+    }
+    setIsBulkDeleteModal(true)
+    setMeetingToDelete(null)
+    setShowDeleteModal(true)
+  }
+
+  const toggleSelectMeeting = (id: number) => {
+    setSelectedMeetingIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
+  const handleConfirmDelete = async () => {
+    setIsDeletingMeeting(true)
+    try {
+      if (isBulkDeleteModal) {
+        const idsToDelete = [...selectedMeetingIds]
+        try {
+          const res = await meetingService.bulkDeleteMeetings(idsToDelete)
+          const deletedList =
+            res?.deleted && res.deleted.length > 0 ? res.deleted : idsToDelete
+          const deletedSet = new Set(deletedList)
+          setMeetingsList((prev) => prev.filter((m) => !deletedSet.has(m.id)))
+          setTasksList((prev) => prev.filter((t) => !deletedSet.has(t.meeting_id)))
+          setNotificationsList((prev) =>
+            prev.filter((n) => !deletedSet.has(n.meetingId))
+          )
+          if (selectedMeeting && deletedSet.has(selectedMeeting.id)) {
+            setSelectedMeeting(null)
+          }
+          setSelectedMeetingIds([])
+          setShowDeleteModal(false)
+          setDeleteNotice({
+            type: 'success',
+            message: `Successfully deleted ${deletedSet.size} meetings.`,
+          })
+          setTimeout(() => setDeleteNotice(null), 4000)
+        } catch (err: any) {
+          if (err?.response && err.response.status === 403) {
+            setShowDeleteModal(false)
+            setDeleteNotice({
+              type: 'error',
+              message:
+                'Forbidden: You do not have permission to delete one or more selected meetings.',
+            })
+            setTimeout(() => setDeleteNotice(null), 5000)
+          } else if (err?.response) {
+            setShowDeleteModal(false)
+            setDeleteNotice({
+              type: 'error',
+              message:
+                err?.response?.data?.detail || 'Failed to delete selected meetings.',
+            })
+            setTimeout(() => setDeleteNotice(null), 5000)
+          } else {
+            // Offline preview mode fallback
+            setMeetingsList((prev) =>
+              prev.filter((m) => !idsToDelete.includes(m.id))
+            )
+            setTasksList((prev) =>
+              prev.filter((t) => !idsToDelete.includes(t.meeting_id))
+            )
+            setNotificationsList((prev) =>
+              prev.filter((n) => !idsToDelete.includes(n.meetingId))
+            )
+            if (selectedMeeting && idsToDelete.includes(selectedMeeting.id)) {
+              setSelectedMeeting(null)
+            }
+            setSelectedMeetingIds([])
+            setShowDeleteModal(false)
+            setDeleteNotice({
+              type: 'preview',
+              message: `Deleted ${idsToDelete.length} meetings (preview mode)`,
+            })
+            setTimeout(() => setDeleteNotice(null), 4000)
+          }
+        }
+      } else if (meetingToDelete) {
+        const targetId = meetingToDelete.id
+        const targetTitle = meetingToDelete.title
+        try {
+          await meetingService.deleteMeeting(targetId)
+          setMeetingsList((prev) => prev.filter((m) => m.id !== targetId))
+          setTasksList((prev) => prev.filter((t) => t.meeting_id !== targetId))
+          setNotificationsList((prev) =>
+            prev.filter((n) => n.meetingId !== targetId)
+          )
+          if (selectedMeeting && selectedMeeting.id === targetId) {
+            setSelectedMeeting(null)
+          }
+          setSelectedMeetingIds((prev) => prev.filter((id) => id !== targetId))
+          setShowDeleteModal(false)
+          setMeetingToDelete(null)
+          setDeleteNotice({
+            type: 'success',
+            message: `Meeting "${targetTitle}" permanently deleted.`,
+          })
+          setTimeout(() => setDeleteNotice(null), 4000)
+        } catch (err: any) {
+          if (err?.response && err.response.status === 403) {
+            setShowDeleteModal(false)
+            setMeetingToDelete(null)
+            setDeleteNotice({
+              type: 'error',
+              message: 'Forbidden: You do not have permission to delete this meeting.',
+            })
+            setTimeout(() => setDeleteNotice(null), 5000)
+          } else if (err?.response) {
+            setShowDeleteModal(false)
+            setMeetingToDelete(null)
+            setDeleteNotice({
+              type: 'error',
+              message:
+                err?.response?.data?.detail || 'Failed to delete meeting.',
+            })
+            setTimeout(() => setDeleteNotice(null), 5000)
+          } else {
+            // Offline preview mode fallback
+            setMeetingsList((prev) => prev.filter((m) => m.id !== targetId))
+            setTasksList((prev) => prev.filter((t) => t.meeting_id !== targetId))
+            setNotificationsList((prev) =>
+              prev.filter((n) => n.meetingId !== targetId)
+            )
+            if (selectedMeeting && selectedMeeting.id === targetId) {
+              setSelectedMeeting(null)
+            }
+            setSelectedMeetingIds((prev) => prev.filter((id) => id !== targetId))
+            setShowDeleteModal(false)
+            setMeetingToDelete(null)
+            setDeleteNotice({
+              type: 'preview',
+              message: `Meeting "${targetTitle}" deleted (preview mode)`,
+            })
+            setTimeout(() => setDeleteNotice(null), 4000)
+          }
+        }
+      }
+    } finally {
+      setIsDeletingMeeting(false)
+    }
+  }
+
   const filtered = meetingsList.filter(m => m.title.toLowerCase().includes(query.toLowerCase()))
   const currentUser = authService.getUser()
 
@@ -2042,11 +2690,19 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
           <Icon name="spark"/>AI Chatbot
           <span style={{ fontSize: '9px', background: 'linear-gradient(135deg, #7c3aed, #ec4899)', color: '#fff', padding: '1px 6px', borderRadius: '8px', fontWeight: 700, marginLeft: 'auto' }}>RAG</span>
         </button>
-        <button onClick={openCalendarModal}><Icon name="calendar"/>Calendar</button>
+        <button onClick={openCalendarModal} className="btn-anim"><Icon name="calendar"/>Calendar</button>
+        <button 
+          className={dashView === 'integrations' ? 'active' : ''} 
+          onClick={() => setDashView('integrations')}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
+          <Icon name="zap"/>Integrations
+          <span style={{ fontSize: '9px', background: '#ede9fe', color: '#7c3aed', padding: '1px 6px', borderRadius: '8px', fontWeight: 700, marginLeft: 'auto' }}>Hub</span>
+        </button>
       </nav>
       <nav className="side-bottom">
         <span>MANAGE</span>
-        <button onClick={openAdminPanel} style={{ color: '#8b5cf6', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <button onClick={openAdminPanel} className="btn-anim" style={{ color: '#8b5cf6', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Icon name="spark" size={16}/> Admin Panel
         </button>
         <button 
@@ -2317,6 +2973,22 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
               </>
             )}
           </div>
+          <button
+            type="button"
+            className="button small btn-anim"
+            onClick={() => setShowRecorderModal(true)}
+            style={{
+              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+              boxShadow: '0 4px 14px rgba(239, 68, 68, 0.35)',
+              color: '#fff',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <span className="anim-record-pulse" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fff', display: 'inline-block' }} />
+            Record Live
+          </button>
           <button className="button small" onClick={() => setShowCreateMeetingModal(true)}><Icon name="plus" size={17}/> Create meeting</button>
         </div>
       </header>
@@ -2332,6 +3004,63 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
           <div style={{ background: '#dcfce7', border: '1px solid #86efac', color: '#166534', padding: '12px 18px', borderRadius: '10px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px' }}>
             <Icon name="check" size={18}/>
             <b>{reminderNotice}</b>
+          </div>
+        )}
+
+        {deleteNotice && (
+          <div
+            role="alert"
+            className="anim-fade-up"
+            style={{
+              background:
+                deleteNotice.type === 'success'
+                  ? (theme === 'dark' ? '#064e3b' : '#dcfce7')
+                  : deleteNotice.type === 'error'
+                  ? (theme === 'dark' ? '#7f1d1d' : '#fee2e2')
+                  : (theme === 'dark' ? '#451a03' : '#fef3c7'),
+              border: `1px solid ${
+                deleteNotice.type === 'success'
+                  ? (theme === 'dark' ? '#059669' : '#86efac')
+                  : deleteNotice.type === 'error'
+                  ? (theme === 'dark' ? '#dc2626' : '#fca5a5')
+                  : (theme === 'dark' ? '#d97706' : '#fcd34d')
+              }`,
+              color:
+                deleteNotice.type === 'success'
+                  ? (theme === 'dark' ? '#a7f3d0' : '#166534')
+                  : deleteNotice.type === 'error'
+                  ? (theme === 'dark' ? '#fecaca' : '#991b1b')
+                  : (theme === 'dark' ? '#fde68a' : '#92400e'),
+              padding: '12px 18px',
+              borderRadius: '10px',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px',
+              fontSize: '13px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Icon name={deleteNotice.type === 'success' ? 'check' : 'spark'} size={18} />
+              <b>{deleteNotice.message}</b>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDeleteNotice(null)}
+              aria-label="Dismiss alert"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'inherit',
+                fontWeight: 700,
+                fontSize: '14px',
+              }}
+            >
+              ✕
+            </button>
           </div>
         )}
 
@@ -2371,7 +3100,124 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                     <span className={`tag ${m.color}`}>{m.tag}</span>
                     <div className="tiny-avatars">{(m.people || ['SK','ML']).map((p:string, idx:number)=><i key={idx}>{p}</i>)}</div>
                     <span className="analyzed"><i/> Analyzed</span>
-                    <button className="more" onClick={(e)=>{e.stopPropagation(); openMeetingDetail(m)}}><Icon name="more"/></button>
+                    <div style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className="more"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setActiveMenuMeetingId(activeMenuMeetingId === m.id ? null : m.id)
+                        }}
+                        aria-label={`Options for ${m.title}`}
+                        aria-haspopup="true"
+                        aria-expanded={activeMenuMeetingId === m.id}
+                      >
+                        <Icon name="more" />
+                      </button>
+                      {activeMenuMeetingId === m.id && (
+                        <div
+                          role="menu"
+                          className="anim-fade-up"
+                          style={{
+                            position: 'absolute',
+                            right: 0,
+                            top: '100%',
+                            marginTop: '4px',
+                            zIndex: 100,
+                            background: theme === 'dark' ? '#1f1a35' : '#ffffff',
+                            border: `1px solid ${theme === 'dark' ? '#372d5b' : '#e5e7eb'}`,
+                            borderRadius: '8px',
+                            boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+                            minWidth: '140px',
+                            padding: '4px',
+                          }}
+                        >
+                          <button
+                            role="menuitem"
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setActiveMenuMeetingId(null)
+                              openMeetingDetail(m)
+                            }}
+                            style={{
+                              width: '100%',
+                              textAlign: 'left',
+                              background: 'transparent',
+                              border: 'none',
+                              padding: '8px 12px',
+                              fontSize: '12px',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              color: theme === 'dark' ? '#e2e8f0' : '#1e293b',
+                            }}
+                          >
+                            <Icon name="spark" size={13} /> View details
+                          </button>
+                          {canEditMeeting(m) && (
+                            <button
+                              role="menuitem"
+                              type="button"
+                              disabled={isMeetingProcessing(m)}
+                              title={isMeetingProcessing(m) ? 'Wait for processing to finish or cancel it first' : 'Edit meeting details'}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleOpenEditMeeting(m)
+                              }}
+                              style={{
+                                width: '100%',
+                                textAlign: 'left',
+                                background: 'transparent',
+                                border: 'none',
+                                padding: '8px 12px',
+                                fontSize: '12px',
+                                borderRadius: '6px',
+                                cursor: isMeetingProcessing(m) ? 'not-allowed' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                color: isMeetingProcessing(m) ? '#9ca3af' : theme === 'dark' ? '#e2e8f0' : '#1e293b',
+                                opacity: isMeetingProcessing(m) ? 0.6 : 1,
+                              }}
+                            >
+                              <Icon name="pencil" size={13} /> Edit
+                            </button>
+                          )}
+                          {canDeleteMeeting(m) && (
+                            <button
+                              role="menuitem"
+                              type="button"
+                              disabled={isMeetingProcessing(m)}
+                              title={isMeetingProcessing(m) ? 'Wait for processing to finish or cancel it first' : 'Delete meeting'}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleOpenDeleteSingle(m)
+                              }}
+                              style={{
+                                width: '100%',
+                                textAlign: 'left',
+                                background: 'transparent',
+                                border: 'none',
+                                padding: '8px 12px',
+                                fontSize: '12px',
+                                borderRadius: '6px',
+                                cursor: isMeetingProcessing(m) ? 'not-allowed' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                color: isMeetingProcessing(m) ? '#9ca3af' : '#ef4444',
+                                opacity: isMeetingProcessing(m) ? 0.6 : 1,
+                              }}
+                            >
+                              <Icon name="trash" size={13} /> Delete
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>)}
                 </div>
               </section>
@@ -2408,14 +3254,61 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '22px' }}>
               <div>
-                <h1 style={{ fontSize: '24px', margin: '0 0 6px', fontWeight: 700 }}>Meetings Hub</h1>
-                <p style={{ margin: 0, color: '#888', fontSize: '14px' }}>Diarized transcripts, executive recaps, and AI insights across your recordings</p>
+                <h1 className="meetings-header-title anim-fade-up" style={{ fontSize: '24px', margin: '0 0 6px', fontWeight: 700 }}>Meetings Hub</h1>
+                <p className="meetings-header-subtitle anim-fade-up" style={{ margin: 0, color: '#888', fontSize: '14px' }}>Diarized transcripts, executive recaps, and AI insights across your recordings</p>
               </div>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <button className="button upload" onClick={() => setShowCreateMeetingModal(true)}>
+                {selectedMeetingIds.length > 0 && (
+                  <>
+                    <button
+                      type="button"
+                      className="button small btn-anim"
+                      onClick={handleOpenBulkDelete}
+                      style={{
+                        background: '#dc2626',
+                        color: '#fff',
+                        border: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 4px 14px rgba(220, 38, 38, 0.35)',
+                      }}
+                    >
+                      <Icon name="trash" size={14} /> Delete selected ({selectedMeetingIds.length})
+                    </button>
+                    <button
+                      type="button"
+                      className="button small btn-anim"
+                      onClick={() => setSelectedMeetingIds([])}
+                      style={{
+                        border: `1px solid ${theme === 'dark' ? '#332959' : '#ccc'}`,
+                        color: theme === 'dark' ? '#c4b5fd' : '#6b7280',
+                      }}
+                    >
+                      Deselect all
+                    </button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  className="button small btn-anim"
+                  onClick={() => setShowRecorderModal(true)}
+                  style={{
+                    background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                    boxShadow: '0 4px 14px rgba(239, 68, 68, 0.35)',
+                    color: '#fff',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <span className="anim-record-pulse" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fff', display: 'inline-block' }} />
+                  Record Live
+                </button>
+                <button className="button upload btn-anim" onClick={() => setShowCreateMeetingModal(true)}>
                   <Icon name="plus" size={17}/> Create meeting
                 </button>
-                <button className="button small" onClick={()=>fileInputRef.current?.click()} style={{ border: '1px solid ' + (theme === 'dark' ? '#332959' : '#ccc') }}>
+                <button className="button small btn-anim" onClick={()=>fileInputRef.current?.click()} style={{ border: '1px solid ' + (theme === 'dark' ? '#332959' : '#ccc') }}>
                   <Icon name="upload" size={15}/> Upload file
                 </button>
               </div>
@@ -2423,11 +3316,12 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
 
             {/* Tag Filter Tabs */}
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
-              {['All', 'Product', 'Research', 'Planning', 'Design'].map((tag) => (
+              {['All', 'Product', 'Research', 'Planning', 'Design'].map((tag, idx) => (
                 <button
                   key={tag}
                   type="button"
                   onClick={() => setMeetingTagFilter(tag)}
+                  className="filter-pill-anim"
                   style={{
                     padding: '6px 16px',
                     borderRadius: '20px',
@@ -2437,6 +3331,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                     border: '1px solid ' + (meetingTagFilter === tag ? '#6d55d8' : (theme === 'dark' ? '#2e264f' : '#e2e8f0')),
                     background: meetingTagFilter === tag ? '#6d55d8' : 'transparent',
                     color: meetingTagFilter === tag ? '#fff' : 'inherit',
+                    animationDelay: `${idx * 60}ms`,
                   }}
                 >
                   {tag}
@@ -2444,71 +3339,217 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
               ))}
             </div>
 
-            {/* Meetings Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
-              {meetingsList
-                .filter(m => meetingTagFilter === 'All' || m.tag?.toLowerCase() === meetingTagFilter.toLowerCase())
-                .filter(m => m.title.toLowerCase().includes(query.toLowerCase()))
-                .map((m) => (
-                  <div
-                    key={m.id || m.title}
-                    style={{
-                      background: theme === 'dark' ? '#1a162b' : '#fff',
-                      border: `1px solid ${theme === 'dark' ? '#2b2349' : '#e6e2ec'}`,
-                      borderRadius: '14px',
-                      padding: '20px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                        <span className={`tag ${m.color}`}>{m.tag}</span>
-                        <span style={{ fontSize: '11px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
-                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}/>
-                          {m.status === 'processing' ? 'Processing' : 'Analyzed'}
-                        </span>
-                      </div>
-
-                      <h3 style={{ fontSize: '16px', margin: '0 0 8px', fontWeight: 600 }}>{m.title}</h3>
-                      <p style={{ margin: '0 0 14px', fontSize: '12px', color: '#888', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span>{m.time}</span> · <Icon name="clock" size={13}/> <span>{m.dur}</span>
-                      </p>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px' }}>
-                        <div className="tiny-avatars">
-                          {(m.people || ['SK', 'ML']).map((p: string, idx: number) => <i key={idx}>{p}</i>)}
+            {/* Meetings Grid / Skeleton */}
+            {meetingsLoading ? (
+              <MeetingsSkeleton theme={theme} />
+            ) : (
+              <div key={meetingTagFilter} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+                {meetingsList
+                  .filter(m => meetingTagFilter === 'All' || m.tag?.toLowerCase() === meetingTagFilter.toLowerCase())
+                  .filter(m => m.title.toLowerCase().includes(query.toLowerCase()))
+                  .map((m, index) => (
+                    <div
+                      key={m.id || m.title}
+                      className="meeting-card-anim hover-lift"
+                      style={{
+                        background: theme === 'dark' ? '#1a162b' : '#fff',
+                        border: `1px solid ${theme === 'dark' ? '#2b2349' : '#e6e2ec'}`,
+                        borderRadius: '14px',
+                        padding: '20px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+                        animationDelay: `${index * 70}ms`,
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input
+                              type="checkbox"
+                              checked={selectedMeetingIds.includes(m.id)}
+                              onChange={() => toggleSelectMeeting(m.id)}
+                              aria-label={`Select ${m.title}`}
+                              style={{ cursor: 'pointer', width: '15px', height: '15px', accentColor: '#6d55d8' }}
+                            />
+                            <span className={`tag ${m.color}`}>{m.tag}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '11px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
+                              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}/>
+                              {m.status === 'processing' ? 'Processing' : 'Analyzed'}
+                            </span>
+                            <div style={{ position: 'relative' }}>
+                              <button
+                                type="button"
+                                className="more btn-anim"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setActiveMenuMeetingId(activeMenuMeetingId === m.id ? null : m.id)
+                                }}
+                                aria-label={`Options for ${m.title}`}
+                                aria-haspopup="true"
+                                aria-expanded={activeMenuMeetingId === m.id}
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: theme === 'dark' ? '#a5a0c0' : '#6b7280',
+                                  padding: '4px',
+                                  borderRadius: '6px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                <Icon name="more" size={16} />
+                              </button>
+                              {activeMenuMeetingId === m.id && (
+                                <div
+                                  role="menu"
+                                  className="anim-fade-up"
+                                  style={{
+                                    position: 'absolute',
+                                    right: 0,
+                                    top: '100%',
+                                    marginTop: '4px',
+                                    zIndex: 100,
+                                    background: theme === 'dark' ? '#1f1a35' : '#ffffff',
+                                    border: `1px solid ${theme === 'dark' ? '#372d5b' : '#e5e7eb'}`,
+                                    borderRadius: '8px',
+                                    boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+                                    minWidth: '150px',
+                                    padding: '4px',
+                                  }}
+                                >
+                                  <button
+                                    role="menuitem"
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setActiveMenuMeetingId(null)
+                                      openMeetingDetail(m)
+                                    }}
+                                    style={{
+                                      width: '100%',
+                                      textAlign: 'left',
+                                      background: 'transparent',
+                                      border: 'none',
+                                      padding: '8px 12px',
+                                      fontSize: '12px',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '8px',
+                                      color: theme === 'dark' ? '#e2e8f0' : '#1e293b',
+                                    }}
+                                  >
+                                    <Icon name="spark" size={13} /> Open Intelligence
+                                  </button>
+                                  {canEditMeeting(m) && (
+                                    <button
+                                      role="menuitem"
+                                      type="button"
+                                      disabled={isMeetingProcessing(m)}
+                                      title={isMeetingProcessing(m) ? 'Wait for processing to finish or cancel it first' : 'Edit meeting details'}
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleOpenEditMeeting(m)
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        textAlign: 'left',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        padding: '8px 12px',
+                                        fontSize: '12px',
+                                        borderRadius: '6px',
+                                        cursor: isMeetingProcessing(m) ? 'not-allowed' : 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        color: isMeetingProcessing(m) ? '#9ca3af' : theme === 'dark' ? '#e2e8f0' : '#1e293b',
+                                        opacity: isMeetingProcessing(m) ? 0.6 : 1,
+                                      }}
+                                    >
+                                      <Icon name="pencil" size={13} /> Edit
+                                    </button>
+                                  )}
+                                  {canDeleteMeeting(m) && (
+                                    <button
+                                      role="menuitem"
+                                      type="button"
+                                      disabled={isMeetingProcessing(m)}
+                                      title={isMeetingProcessing(m) ? 'Wait for processing to finish or cancel it first' : 'Delete meeting'}
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleOpenDeleteSingle(m)
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        textAlign: 'left',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        padding: '8px 12px',
+                                        fontSize: '12px',
+                                        borderRadius: '6px',
+                                        cursor: isMeetingProcessing(m) ? 'not-allowed' : 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        color: isMeetingProcessing(m) ? '#9ca3af' : '#ef4444',
+                                        opacity: isMeetingProcessing(m) ? 0.6 : 1,
+                                      }}
+                                    >
+                                      <Icon name="trash" size={13} /> Delete
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <small style={{ color: '#888', fontSize: '11px' }}>
-                          {(m.people || []).length} participants
-                        </small>
+
+                        <h3 style={{ fontSize: '16px', margin: '0 0 8px', fontWeight: 600 }}>{m.title}</h3>
+                        <p style={{ margin: '0 0 14px', fontSize: '12px', color: '#888', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>{m.time}</span> · <Icon name="clock" size={13}/> <span>{m.dur}</span>
+                        </p>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px' }}>
+                          <div className="tiny-avatars">
+                            {(m.people || ['SK', 'ML']).map((p: string, idx: number) => <i key={idx}>{p}</i>)}
+                          </div>
+                          <small style={{ color: '#888', fontSize: '11px' }}>
+                            {(m.people || []).length} participants
+                          </small>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '8px', borderTop: `1px solid ${theme === 'dark' ? '#261f42' : '#f0eef4'}`, paddingTop: '14px' }}>
+                        <button
+                          type="button"
+                          onClick={() => openMeetingDetail(m)}
+                          className="button small btn-anim"
+                          style={{ flex: 1, fontSize: '11px', padding: '7px 10px', justifyContent: 'center' }}
+                        >
+                          <Icon name="spark" size={13}/> Open Intelligence
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => exportService.downloadPdf(m.id, m.title)}
+                          className="button small btn-anim"
+                          style={{ fontSize: '11px', padding: '7px 10px', background: '#e11d48', color: '#fff', border: 'none' }}
+                          title="Download PDF report"
+                        >
+                          <Icon name="file" size={13}/> PDF
+                        </button>
                       </div>
                     </div>
-
-                    <div style={{ display: 'flex', gap: '8px', borderTop: `1px solid ${theme === 'dark' ? '#261f42' : '#f0eef4'}`, paddingTop: '14px' }}>
-                      <button
-                        type="button"
-                        onClick={() => openMeetingDetail(m)}
-                        className="button small"
-                        style={{ flex: 1, fontSize: '11px', padding: '7px 10px', justifyContent: 'center' }}
-                      >
-                        <Icon name="spark" size={13}/> Open Intelligence
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => exportService.downloadPdf(m.id, m.title)}
-                        className="button small"
-                        style={{ fontSize: '11px', padding: '7px 10px', background: '#e11d48', color: '#fff', border: 'none' }}
-                        title="Download PDF report"
-                      >
-                        <Icon name="file" size={13}/> PDF
-                      </button>
-                    </div>
-                  </div>
-                ))}
-            </div>
+                  ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -2517,27 +3558,27 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '20px' }}>
               <div>
-                <h1 style={{ fontSize: '24px', margin: '0 0 6px', fontWeight: 700 }}>Action Items & Deliverables</h1>
-                <p style={{ margin: 0, color: '#888', fontSize: '14px' }}>Automated deliverable tracking, speaker ownership delegation, and scheduled deadlines</p>
+                <h1 className="meetings-header-title anim-fade-up" style={{ fontSize: '24px', margin: '0 0 6px', fontWeight: 700 }}>Action Items & Deliverables</h1>
+                <p className="meetings-header-subtitle anim-fade-up" style={{ margin: 0, color: '#888', fontSize: '14px' }}>Automated deliverable tracking, speaker ownership delegation, and scheduled deadlines</p>
               </div>
-              <button className="button small" onClick={handleTriggerReminders}>
+              <button className="button small btn-anim" onClick={handleTriggerReminders}>
                 <Icon name="mail" size={14}/> Dispatch Email Reminders
               </button>
             </div>
 
             {/* Quick Stats Banner */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '22px' }}>
-              <div style={{ background: theme === 'dark' ? '#1f1a35' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
+              <div className="stat-metric-card hover-lift" style={{ background: theme === 'dark' ? '#1f1a35' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}`, animationDelay: '0ms' }}>
                 <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Total Extracted</span>
                 <h3 style={{ fontSize: '26px', margin: '4px 0 0', color: '#6d55d8' }}>{tasksList.length}</h3>
                 <small style={{ color: '#888', fontSize: '11px' }}>Across all team syncs</small>
               </div>
-              <div style={{ background: theme === 'dark' ? '#1f1a35' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
+              <div className="stat-metric-card hover-lift" style={{ background: theme === 'dark' ? '#1f1a35' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}`, animationDelay: '70ms' }}>
                 <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Completed</span>
                 <h3 style={{ fontSize: '26px', margin: '4px 0 0', color: '#10b981' }}>{tasksList.filter(t => t.status === 'completed').length}</h3>
                 <small style={{ color: '#888', fontSize: '11px' }}>Marked as resolved</small>
               </div>
-              <div style={{ background: theme === 'dark' ? '#1f1a35' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
+              <div className="stat-metric-card hover-lift" style={{ background: theme === 'dark' ? '#1f1a35' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}`, animationDelay: '140ms' }}>
                 <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Pending Execution</span>
                 <h3 style={{ fontSize: '26px', margin: '4px 0 0', color: '#f59e0b' }}>{tasksList.filter(t => t.status !== 'completed').length}</h3>
                 <small style={{ color: '#888', fontSize: '11px' }}>Awaiting follow-up</small>
@@ -2546,11 +3587,12 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
 
             {/* Filter Tabs */}
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '18px' }}>
-              {(['All', 'Pending', 'Completed'] as const).map((st) => (
+              {(['All', 'Pending', 'Completed'] as const).map((st, idx) => (
                 <button
                   key={st}
                   type="button"
                   onClick={() => setTaskStatusFilter(st)}
+                  className="filter-pill-anim"
                   style={{
                     padding: '6px 16px',
                     borderRadius: '20px',
@@ -2560,6 +3602,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                     border: '1px solid ' + (taskStatusFilter === st ? '#6d55d8' : (theme === 'dark' ? '#2e264f' : '#e2e8f0')),
                     background: taskStatusFilter === st ? '#6d55d8' : 'transparent',
                     color: taskStatusFilter === st ? '#fff' : 'inherit',
+                    animationDelay: `${idx * 60}ms`,
                   }}
                 >
                   {st}
@@ -2568,7 +3611,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
             </div>
 
             {/* Tasks List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div key={taskStatusFilter} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {tasksList
                 .filter(t => {
                   if (taskStatusFilter === 'Pending') return t.status !== 'completed'
@@ -2576,9 +3619,10 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                   return true
                 })
                 .filter(t => t.title.toLowerCase().includes(query.toLowerCase()) || t.source.toLowerCase().includes(query.toLowerCase()))
-                .map((t) => (
+                .map((t, index) => (
                   <div
                     key={t.id || t.title}
+                    className="task-item-card hover-lift"
                     style={{
                       background: theme === 'dark' ? '#1a162b' : '#fff',
                       border: `1px solid ${theme === 'dark' ? '#2b2349' : '#e6e2ec'}`,
@@ -2589,11 +3633,12 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                       justifyContent: 'space-between',
                       gap: '16px',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                      animationDelay: `${index * 50}ms`,
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
                       <button
-                        className={t.status === 'completed' ? 'checked' : ''}
+                        className={`task-check-btn ${t.status === 'completed' ? 'checked' : ''}`}
                         onClick={() => toggleTaskStatus(t)}
                         style={{
                           width: '22px',
@@ -2613,7 +3658,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                       </button>
 
                       <div style={{ flex: 1 }}>
-                        <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: 600, textDecoration: t.status === 'completed' ? 'line-through' : 'none', color: t.status === 'completed' ? '#888' : 'inherit' }}>
+                        <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: 600, textDecoration: t.status === 'completed' ? 'line-through' : 'none', color: t.status === 'completed' ? '#888' : 'inherit', transition: 'color 0.2s ease' }}>
                           {t.title}
                         </h4>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '11px', color: '#888' }}>
@@ -2627,11 +3672,11 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <i className="task-avatar" style={{ fontStyle: 'normal' }}>{t.avatar}</i>
+                      <i className="task-avatar anim-pop" style={{ fontStyle: 'normal' }}>{t.avatar}</i>
                       <button
                         type="button"
                         onClick={() => handleSyncToCalendar(t)}
-                        className="button small"
+                        className="button small btn-anim"
                         style={{ fontSize: '11px', padding: '6px 12px', gap: '5px' }}
                         title="Add to Google Calendar"
                       >
@@ -2649,13 +3694,13 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '20px' }}>
               <div>
-                <h1 style={{ fontSize: '24px', margin: '0 0 6px', fontWeight: 700 }}>Team Workspace & Collaborators</h1>
-                <p style={{ margin: 0, color: '#888', fontSize: '14px' }}>Multi-speaker voice biometric profiles, speaking time distributions & assigned deliverables</p>
+                <h1 className="meetings-header-title anim-fade-up" style={{ fontSize: '24px', margin: '0 0 6px', fontWeight: 700 }}>Team Workspace & Collaborators</h1>
+                <p className="meetings-header-subtitle anim-fade-up" style={{ margin: 0, color: '#888', fontSize: '14px' }}>Multi-speaker voice biometric profiles, speaking time distributions & assigned deliverables</p>
               </div>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <button
                   type="button"
-                  className="button small"
+                  className="button small btn-anim"
                   onClick={() => setShowCreateTeamModal(true)}
                   style={{ background: '#7c3aed', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
@@ -2663,7 +3708,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                 </button>
                 <button
                   type="button"
-                  className="button upload"
+                  className="button upload btn-anim"
                   onClick={() => setShowInviteModal(true)}
                 >
                   <Icon name="users" size={16}/> Invite Team Member
@@ -2671,67 +3716,286 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
               </div>
             </div>
 
-            {/* Teams Switcher Tabs */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '22px' }}>
-              <span style={{ fontSize: '11px', color: '#888', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', marginRight: '4px' }}>TEAMS:</span>
-              {teamsList.map(team => (
-                <button
-                  key={team.id}
-                  type="button"
-                  onClick={() => setActiveTeamId(team.id)}
-                  style={{
-                    padding: '6px 16px',
-                    borderRadius: '20px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    border: '1px solid ' + (activeTeamId === team.id ? '#6d55d8' : (theme === 'dark' ? '#2e264f' : '#e2e8f0')),
-                    background: activeTeamId === team.id ? '#6d55d8' : 'transparent',
-                    color: activeTeamId === team.id ? '#fff' : 'inherit',
-                  }}
-                >
-                  {team.name}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => setShowCreateTeamModal(true)}
-                style={{
-                  padding: '5px 12px',
-                  borderRadius: '20px',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  border: '1px dashed #7c3aed',
-                  background: 'transparent',
-                  color: '#7c3aed',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
-                + New Team
-              </button>
-            </div>
+            {/* Teams Switcher Tabs with Role-Aware Management Menu */}
+            {(() => {
+              const activeTeam = teamsList.find((t: any) => t.id === activeTeamId) || teamsList[0]
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '22px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '11px', color: '#888', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', marginRight: '4px' }}>TEAMS:</span>
+                    {teamsList.map((team, idx) => {
+                      const isActive = activeTeamId === team.id
+                      const isMenuOpen = teamMenuOpenId === team.id
+                      const isOwner = team.my_role === 'owner' || (!team.my_role && idx === 0)
+                      const canEdit = isOwner || team.my_role === 'admin'
+                      return (
+                        <div key={team.id} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                          <div
+                            className="filter-pill-anim"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '5px 8px 5px 14px',
+                              borderRadius: '20px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              border: '1px solid ' + (isActive ? '#7c5cff' : (theme === 'dark' ? '#2e264f' : '#e2e8f0')),
+                              background: isActive ? '#7c5cff' : (theme === 'dark' ? 'rgba(255,255,255,0.04)' : '#f8f7fb'),
+                              color: isActive ? '#fff' : 'inherit',
+                              animationDelay: `${idx * 50}ms`,
+                              boxShadow: isActive ? '0 2px 8px rgba(124, 92, 255, 0.35)' : 'none',
+                            }}
+                          >
+                            <span onClick={() => setActiveTeamId(team.id)} style={{ cursor: 'pointer' }}>
+                              {team.name}
+                            </span>
+                            {/* 3-dot dropdown toggle */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setTeamMenuOpenId(isMenuOpen ? null : team.id)
+                              }}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: isActive ? '#fff' : (theme === 'dark' ? '#aaa' : '#666'),
+                                cursor: 'pointer',
+                                padding: '2px 4px',
+                                borderRadius: '10px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                fontSize: '14px',
+                                lineHeight: 1,
+                              }}
+                              title="Team options"
+                              aria-label={`Options for ${team.name}`}
+                            >
+                              ⋮
+                            </button>
+                          </div>
+
+                          {/* Dropdown Menu */}
+                          {isMenuOpen && (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                top: '100%',
+                                left: 0,
+                                marginTop: '6px',
+                                zIndex: 50,
+                                minWidth: '190px',
+                                background: theme === 'dark' ? '#181528' : '#ffffff',
+                                border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.12)' : '#e2e8f0'}`,
+                                borderRadius: '12px',
+                                boxShadow: '0 10px 25px rgba(0,0,0,0.4)',
+                                padding: '6px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '2px',
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div style={{ padding: '4px 8px', fontSize: '10px', color: '#888', fontWeight: 700, textTransform: 'uppercase' }}>
+                                Role: {team.my_role || (idx === 0 ? 'owner' : 'member')}
+                              </div>
+                              {canEdit && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingTeam(team)
+                                    setTeamMenuOpenId(null)
+                                  }}
+                                  className="btn-anim"
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    padding: '7px 10px',
+                                    borderRadius: '8px',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: theme === 'dark' ? '#fff' : '#1e293b',
+                                    fontSize: '12px',
+                                    textAlign: 'left',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  <span>✏️</span> Edit Team Settings
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setManagingMembersTeam(team)
+                                  setTeamMenuOpenId(null)
+                                }}
+                                className="btn-anim"
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                  padding: '7px 10px',
+                                  borderRadius: '8px',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: theme === 'dark' ? '#fff' : '#1e293b',
+                                  fontSize: '12px',
+                                  textAlign: 'left',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <span>👥</span> Manage Members & Invites
+                              </button>
+                              {!isOwner && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    handleLeaveTeamDirect(team)
+                                    setTeamMenuOpenId(null)
+                                  }}
+                                  className="btn-anim"
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    padding: '7px 10px',
+                                    borderRadius: '8px',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#f59e0b',
+                                    fontSize: '12px',
+                                    textAlign: 'left',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  <span>🚪</span> Leave Team
+                                </button>
+                              )}
+                              {isOwner && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setDeletingTeam(team)
+                                    setTeamMenuOpenId(null)
+                                  }}
+                                  className="btn-anim"
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    padding: '7px 10px',
+                                    borderRadius: '8px',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#ef4444',
+                                    fontSize: '12px',
+                                    textAlign: 'left',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  <span>🗑️</span> Delete Team
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateTeamModal(true)}
+                      className="filter-pill-anim btn-anim"
+                      style={{
+                        padding: '5px 12px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        border: '1px dashed #7c3aed',
+                        background: 'transparent',
+                        color: '#7c3aed',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        animationDelay: `${teamsList.length * 50}ms`,
+                      }}
+                    >
+                      + New Team
+                    </button>
+                  </div>
+
+                  {/* Active Team Direct Actions */}
+                  {activeTeam && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setManagingMembersTeam(activeTeam)}
+                        className="button small btn-anim"
+                        style={{
+                          padding: '6px 14px',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          background: theme === 'dark' ? 'rgba(255,255,255,0.06)' : '#f1f5f9',
+                          border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`,
+                          color: 'inherit',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <span>👥</span> Members ({activeTeam.member_count || teamList.length})
+                      </button>
+                      {(activeTeam.my_role === 'owner' || activeTeam.my_role === 'admin' || !activeTeam.my_role) && (
+                        <button
+                          type="button"
+                          onClick={() => setEditingTeam(activeTeam)}
+                          className="button small btn-anim"
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            background: theme === 'dark' ? 'rgba(255,255,255,0.06)' : '#f1f5f9',
+                            border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.1)' : '#e2e8f0'}`,
+                            color: 'inherit',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <span>⚙️</span> Team Settings
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
 
             {/* Team Metrics */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '24px' }}>
-              <div style={{ background: theme === 'dark' ? '#1f1a35' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
+              <div className="stat-metric-card hover-lift" style={{ background: theme === 'dark' ? '#1f1a35' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}`, animationDelay: '0ms' }}>
                 <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Total Members</span>
                 <h3 style={{ fontSize: '26px', margin: '4px 0 0', color: '#6d55d8' }}>{teamList.length}</h3>
                 <small style={{ color: '#888', fontSize: '11px' }}>In current organization</small>
               </div>
-              <div style={{ background: theme === 'dark' ? '#1f1a35' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
+              <div className="stat-metric-card hover-lift" style={{ background: theme === 'dark' ? '#1f1a35' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}`, animationDelay: '60ms' }}>
                 <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Active Voice Profiles</span>
                 <h3 style={{ fontSize: '26px', margin: '4px 0 0', color: '#10b981' }}>{teamList.filter(m => m.status === 'Active').length}</h3>
                 <small style={{ color: '#888', fontSize: '11px' }}>Who spoke profiles</small>
               </div>
-              <div style={{ background: theme === 'dark' ? '#1f1a35' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
+              <div className="stat-metric-card hover-lift" style={{ background: theme === 'dark' ? '#1f1a35' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}`, animationDelay: '120ms' }}>
                 <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Avg Participation</span>
                 <h3 style={{ fontSize: '26px', margin: '4px 0 0', color: '#2563eb' }}>78%</h3>
                 <small style={{ color: '#888', fontSize: '11px' }}>Talk-to-listen dynamic</small>
               </div>
-              <div style={{ background: theme === 'dark' ? '#1f1a35' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
+              <div className="stat-metric-card hover-lift" style={{ background: theme === 'dark' ? '#1f1a35' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}`, animationDelay: '180ms' }}>
                 <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Total Tasks Handled</span>
                 <h3 style={{ fontSize: '26px', margin: '4px 0 0', color: '#059669' }}>
                   {teamList.reduce((acc, m) => acc + (m.tasksAssigned || 0), 0)}
@@ -2741,10 +4005,11 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
             </div>
 
             {/* Team Members Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
-              {teamList.map((member) => (
+            <div key={activeTeamId} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+              {teamList.map((member, index) => (
                 <div
                   key={member.id}
+                  className="team-member-card hover-lift"
                   style={{
                     background: theme === 'dark' ? '#1a162b' : '#fff',
                     border: `1px solid ${theme === 'dark' ? '#2b2349' : '#e6e2ec'}`,
@@ -2754,12 +4019,13 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
+                    animationDelay: `${index * 60}ms`,
                   }}
                 >
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#ede9fe', color: '#6d55d8', fontWeight: 700, fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div className="team-avatar-pulse" style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#ede9fe', color: '#6d55d8', fontWeight: 700, fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           {member.avatar}
                         </div>
                         <div>
@@ -2767,7 +4033,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                           <span style={{ fontSize: '11px', color: '#888' }}>{member.email}</span>
                         </div>
                       </div>
-                      <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '10px', fontWeight: 600, background: member.status === 'Active' ? '#dcfce7' : '#fef3c7', color: member.status === 'Active' ? '#15803d' : '#b45309' }}>
+                      <span className={`team-status-badge ${member.status === 'Active' ? 'active' : ''}`} style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '10px', fontWeight: 600, background: member.status === 'Active' ? '#dcfce7' : '#fef3c7', color: member.status === 'Active' ? '#15803d' : '#b45309' }}>
                         {member.status}
                       </span>
                     </div>
@@ -2778,7 +4044,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                       </span>
                     </div>
 
-                    <div style={{ background: theme === 'dark' ? '#211c38' : '#f9f8fc', padding: '12px', borderRadius: '10px', marginBottom: '16px', fontSize: '12px' }}>
+                    <div className="team-stats-box" style={{ background: theme === 'dark' ? '#211c38' : '#f9f8fc', padding: '12px', borderRadius: '10px', marginBottom: '16px', fontSize: '12px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                         <span style={{ color: '#888' }}>Speaking Distribution:</span>
                         <b>{member.speakingTime}</b>
@@ -2797,7 +4063,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                         setTaskStatusFilter('All')
                         setDashView('tasks')
                       }}
-                      className="button small"
+                      className="button small btn-anim"
                       style={{ flex: 1, fontSize: '11px', padding: '6px 10px', justifyContent: 'center' }}
                     >
                       <Icon name="task" size={13}/> View Tasks
@@ -2808,7 +4074,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                         setReminderNotice(`✓ Meeting invitation sent to ${member.name}!`)
                         setTimeout(() => setReminderNotice(''), 3500)
                       }}
-                      className="button small"
+                      className="button small btn-anim"
                       style={{ fontSize: '11px', padding: '6px 12px' }}
                     >
                       <Icon name="mail" size={13}/> Ping
@@ -2826,12 +4092,12 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
             {/* Page Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'linear-gradient(135deg, #7c3aed, #ec4899)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(124,58,237,0.25)' }}>
+                <span className="floating-ai-sparkle-btn" style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'linear-gradient(135deg, #7c3aed, #ec4899)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(124,58,237,0.25)' }}>
                   <Icon name="spark" size={24}/>
                 </span>
                 <div>
-                  <h1 style={{ fontSize: '22px', margin: '0 0 4px', fontWeight: 700 }}>Meetora AI Meeting Chatbot</h1>
-                  <p style={{ margin: 0, color: '#888', fontSize: '13px' }}>
+                  <h1 className="meetings-header-title anim-fade-up" style={{ fontSize: '22px', margin: '0 0 4px', fontWeight: 700 }}>Meetora AI Meeting Chatbot</h1>
+                  <p className="meetings-header-subtitle anim-fade-up" style={{ margin: 0, color: '#888', fontSize: '13px' }}>
                     Semantic Q&A grounded strictly in meeting transcripts, action items, and decisions.
                   </p>
                 </div>
@@ -2875,7 +4141,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                       citations: []
                     }
                   ])}
-                  className="button small"
+                  className="button small btn-anim"
                   style={{ fontSize: '11px', padding: '6px 12px' }}
                 >
                   Clear Chat
@@ -2897,6 +4163,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                   type="button"
                   onClick={() => handleSendGlobalChat(prompt)}
                   disabled={globalChatLoading}
+                  className="filter-pill-anim btn-anim"
                   style={{
                     fontSize: '11px',
                     padding: '6px 12px',
@@ -2905,7 +4172,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                     background: theme === 'dark' ? '#1b1730' : '#f8f7fb',
                     color: 'inherit',
                     cursor: 'pointer',
-                    transition: 'all 0.15s ease'
+                    animationDelay: `${idx * 40}ms`,
                   }}
                 >
                   💡 {prompt}
@@ -2929,6 +4196,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                 {globalChatMessages.map((msg) => (
                   <div
                     key={msg.id}
+                    className="chat-bubble-anim"
                     style={{
                       display: 'flex',
                       gap: '12px',
@@ -2938,7 +4206,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                     }}
                   >
                     {msg.role === 'assistant' && (
-                      <span style={{
+                      <span className="anim-pop" style={{
                         width: '32px',
                         height: '32px',
                         borderRadius: '50%',
@@ -2985,6 +4253,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                                       setActiveHighlightTs(c.start_time)
                                     }
                                   }}
+                                  className="btn-anim"
                                   style={{
                                     fontSize: '11px',
                                     padding: '4px 8px',
@@ -3028,7 +4297,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                     </div>
 
                     {msg.role === 'user' && (
-                      <span style={{
+                      <span className="anim-pop" style={{
                         width: '32px',
                         height: '32px',
                         borderRadius: '50%',
@@ -3048,7 +4317,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                 ))}
 
                 {globalChatLoading && (
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <div className="chat-typing-indicator" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     <span style={{
                       width: '32px',
                       height: '32px',
@@ -3108,7 +4377,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                 />
                 <button
                   type="submit"
-                  className="button"
+                  className="button btn-anim"
                   disabled={!globalChatQuery.trim() || globalChatLoading}
                   style={{ padding: '12px 22px', display: 'flex', alignItems: 'center', gap: '8px' }}
                 >
@@ -3120,6 +4389,10 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
           </div>
         )}
 
+        {/* View 6: Enterprise Integrations & Webhook Hub */}
+        {dashView === 'integrations' && (
+          <IntegrationsHubView theme={theme} />
+        )}
 
         {selectedMeeting && (
           <div style={{ marginTop: '24px', background: theme === 'dark' ? '#18142a' : '#fff', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#e6e2ec'}`, borderRadius: '14px', padding: '24px', boxShadow: '0 20px 50px rgba(0,0,0,0.08)' }}>
@@ -3165,6 +4438,56 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                 >
                   <Icon name="spark" size={13}/> Copy Email
                 </button>
+                {canEditMeeting(selectedMeeting) && (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEditMeeting(selectedMeeting)}
+                    disabled={isMeetingProcessing(selectedMeeting)}
+                    title={isMeetingProcessing(selectedMeeting) ? 'Wait for processing to finish or cancel it first' : 'Edit meeting details'}
+                    className="button small btn-anim"
+                    style={{
+                      background: theme === 'dark' ? '#2e264f' : '#ede9fe',
+                      color: theme === 'dark' ? '#c4b5fd' : '#5b21b6',
+                      border: `1px solid ${theme === 'dark' ? '#433878' : '#c4b5fd'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      cursor: isMeetingProcessing(selectedMeeting) ? 'not-allowed' : 'pointer',
+                      opacity: isMeetingProcessing(selectedMeeting) ? 0.6 : 1,
+                    }}
+                  >
+                    <Icon name="pencil" size={13}/> Edit meeting
+                  </button>
+                )}
+                {canDeleteMeeting(selectedMeeting) && (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenDeleteSingle(selectedMeeting)}
+                    disabled={isMeetingProcessing(selectedMeeting)}
+                    title={isMeetingProcessing(selectedMeeting) ? 'Wait for processing to finish or cancel it first' : 'Delete meeting permanently'}
+                    className="button small btn-anim"
+                    style={{
+                      background: '#dc2626',
+                      color: '#fff',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      cursor: isMeetingProcessing(selectedMeeting) ? 'not-allowed' : 'pointer',
+                      opacity: isMeetingProcessing(selectedMeeting) ? 0.6 : 1,
+                    }}
+                  >
+                    <Icon name="trash" size={13}/> Delete meeting
+                  </button>
+                )}
                 <button className="button small" onClick={()=>setSelectedMeeting(null)}>Close</button>
               </div>
             </div>
@@ -3213,12 +4536,175 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
             {meetingDetailTab === 'summary' ? (
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px' }}>
                 <div>
-                  <label style={{ fontSize: '10px', fontWeight: 700, color: '#6d55d8', letterSpacing: '1.2px' }}>AI EXECUTIVE SUMMARY</label>
-                  <p style={{ margin: '8px 0 14px', fontSize: '14px', lineHeight: 1.6 }}>{selectedMeeting.summary?.overview || 'Meeting overview and decisions recorded.'}</p>
-                  {selectedMeeting.summary?.key_takeaways && (
-                    <ul style={{ paddingLeft: '18px', fontSize: '13px', color: theme === 'dark' ? '#c4bfd3' : '#555', lineHeight: 1.6 }}>
-                      {selectedMeeting.summary.key_takeaways.map((k: string, i: number) => <li key={i}>{k}</li>)}
-                    </ul>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <label style={{ fontSize: '10px', fontWeight: 700, color: '#6d55d8', letterSpacing: '1.2px' }}>AI EXECUTIVE SUMMARY</label>
+                      {selectedMeeting.summary?.edited_by_user && (
+                        <span
+                          style={{
+                            fontSize: '9px',
+                            fontWeight: 700,
+                            background: '#ede9fe',
+                            color: '#6d55d8',
+                            padding: '2px 7px',
+                            borderRadius: '10px',
+                            border: '1px solid #c4b5fd',
+                          }}
+                          title={`Edited by ${selectedMeeting.summary.updated_by || 'User'}`}
+                        >
+                          ✎ Edited
+                        </span>
+                      )}
+                    </div>
+                    {canEditMeeting(selectedMeeting) && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {!isEditingSummary ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={handleStartEditSummary}
+                              className="btn-anim"
+                              style={{
+                                background: 'transparent',
+                                border: `1px solid ${theme === 'dark' ? '#372d5b' : '#d1d5db'}`,
+                                color: 'inherit',
+                                borderRadius: '6px',
+                                padding: '3px 8px',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                            >
+                              <Icon name="pencil" size={11} /> Edit summary
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleRegenerateSummary}
+                              className="btn-anim"
+                              style={{
+                                background: 'transparent',
+                                border: '1px solid #c4b5fd',
+                                color: '#6d55d8',
+                                borderRadius: '6px',
+                                padding: '3px 8px',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                              title="Regenerate summary with AI"
+                            >
+                              <Icon name="spark" size={11} /> Regenerate with AI
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => setIsEditingSummary(false)}
+                              disabled={isSavingSummary}
+                              className="btn-anim"
+                              style={{
+                                background: 'transparent',
+                                border: `1px solid ${theme === 'dark' ? '#372d5b' : '#d1d5db'}`,
+                                color: 'inherit',
+                                borderRadius: '6px',
+                                padding: '3px 8px',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                cursor: isSavingSummary ? 'not-allowed' : 'pointer',
+                              }}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleSaveSummary}
+                              disabled={isSavingSummary || !summaryEditOverview.trim()}
+                              className="btn-anim"
+                              style={{
+                                background: '#6d55d8',
+                                border: 'none',
+                                color: '#fff',
+                                borderRadius: '6px',
+                                padding: '3px 10px',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                cursor: isSavingSummary || !summaryEditOverview.trim() ? 'not-allowed' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                            >
+                              {isSavingSummary ? 'Saving...' : 'Save'}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {isEditingSummary ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '11px', color: '#888', marginBottom: '4px', display: 'block' }}>
+                          Overview:
+                        </label>
+                        <textarea
+                          rows={4}
+                          value={summaryEditOverview}
+                          onChange={(e) => setSummaryEditOverview(e.target.value)}
+                          style={{
+                            width: '100%',
+                            boxSizing: 'border-box',
+                            padding: '8px 10px',
+                            fontSize: '13px',
+                            borderRadius: '8px',
+                            border: `1px solid ${theme === 'dark' ? '#372d5b' : '#d1d5db'}`,
+                            background: theme === 'dark' ? '#231c3d' : '#fff',
+                            color: 'inherit',
+                            fontFamily: 'inherit',
+                            lineHeight: 1.5,
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', color: '#888', marginBottom: '4px', display: 'block' }}>
+                          Key Takeaways (one per line):
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={summaryEditTakeaways}
+                          onChange={(e) => setSummaryEditTakeaways(e.target.value)}
+                          style={{
+                            width: '100%',
+                            boxSizing: 'border-box',
+                            padding: '8px 10px',
+                            fontSize: '13px',
+                            borderRadius: '8px',
+                            border: `1px solid ${theme === 'dark' ? '#372d5b' : '#d1d5db'}`,
+                            background: theme === 'dark' ? '#231c3d' : '#fff',
+                            color: 'inherit',
+                            fontFamily: 'inherit',
+                            lineHeight: 1.5,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p style={{ margin: '8px 0 14px', fontSize: '14px', lineHeight: 1.6 }}>{selectedMeeting.summary?.overview || 'Meeting overview and decisions recorded.'}</p>
+                      {selectedMeeting.summary?.key_takeaways && (
+                        <ul style={{ paddingLeft: '18px', fontSize: '13px', color: theme === 'dark' ? '#c4bfd3' : '#555', lineHeight: 1.6 }}>
+                          {selectedMeeting.summary.key_takeaways.map((k: string, i: number) => <li key={i}>{k}</li>)}
+                        </ul>
+                      )}
+                    </>
                   )}
                 </div>
                 <div>
@@ -3537,15 +5023,108 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                             >
                               Rename
                             </button>
+                            {canEditMeeting(selectedMeeting) && (
+                              <button
+                                type="button"
+                                className="transcript-pencil-btn"
+                                onClick={() => handleStartEditTranscript(t)}
+                                title="Edit transcript line (Enter saves, Esc cancels)"
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#888',
+                                  fontSize: '11px',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  padding: '2px 4px',
+                                  borderRadius: '4px',
+                                }}
+                              >
+                                <Icon name="pencil" size={12}/> Edit
+                              </button>
+                            )}
                             {t.is_action_item && (
                               <span style={{ fontSize: '9px', background: '#fef3c7', color: '#92400e', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
                                 Action Item
                               </span>
                             )}
                           </div>
-                          <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.5 }}>
-                            {t.text}
-                          </p>
+                          {editingTranscriptId === t.id ? (
+                            <div style={{ marginTop: '4px' }}>
+                              <input
+                                autoFocus
+                                type="text"
+                                value={editingTranscriptText}
+                                onChange={(e) => setEditingTranscriptText(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault()
+                                    handleSaveTranscriptLine(t.id)
+                                  } else if (e.key === 'Escape') {
+                                    e.preventDefault()
+                                    setEditingTranscriptId(null)
+                                  }
+                                }}
+                                disabled={isSavingTranscript}
+                                style={{
+                                  width: '100%',
+                                  padding: '6px 10px',
+                                  fontSize: '13px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #6d55d8',
+                                  background: theme === 'dark' ? '#141124' : '#fff',
+                                  color: 'inherit',
+                                  boxSizing: 'border-box',
+                                  outline: 'none',
+                                }}
+                              />
+                              <div style={{ display: 'flex', gap: '6px', marginTop: '6px', alignItems: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveTranscriptLine(t.id)}
+                                  disabled={isSavingTranscript || !editingTranscriptText.trim()}
+                                  className="btn-anim"
+                                  style={{
+                                    fontSize: '11px',
+                                    padding: '3px 8px',
+                                    borderRadius: '4px',
+                                    background: '#6d55d8',
+                                    color: '#fff',
+                                    border: 'none',
+                                    cursor: isSavingTranscript || !editingTranscriptText.trim() ? 'not-allowed' : 'pointer',
+                                  }}
+                                >
+                                  {isSavingTranscript ? 'Saving...' : 'Save (Enter)'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingTranscriptId(null)}
+                                  disabled={isSavingTranscript}
+                                  className="btn-anim"
+                                  style={{
+                                    fontSize: '11px',
+                                    padding: '3px 8px',
+                                    borderRadius: '4px',
+                                    background: 'transparent',
+                                    border: `1px solid ${theme === 'dark' ? '#372d5b' : '#ccc'}`,
+                                    color: 'inherit',
+                                    cursor: isSavingTranscript ? 'not-allowed' : 'pointer',
+                                  }}
+                                >
+                                  Cancel (Esc)
+                                </button>
+                                <small style={{ color: '#888', fontSize: '10px' }}>
+                                  Press Enter to save, Esc to cancel
+                                </small>
+                              </div>
+                            </div>
+                          ) : (
+                            <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.5 }}>
+                              {t.text}
+                            </p>
+                          )}
                           {/* Bilingual Translation */}
                           {isBilingualView && (
                             <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#6d55d8', fontStyle: 'italic', background: theme === 'dark' ? 'rgba(109,85,216,0.1)' : 'rgba(109,85,216,0.06)', padding: '4px 8px', borderRadius: '4px' }}>
@@ -3563,28 +5142,28 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
         )}
         {/* Google Calendar & Celery Beat Reminders Modal */}
         {showCalendarModal && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-            <div style={{ width: '100%', maxWidth: '640px', background: theme === 'dark' ? '#18142a' : '#fff', color: theme === 'dark' ? '#f0eeff' : '#1f1b2e', borderRadius: '16px', padding: '24px', boxShadow: '0 25px 60px rgba(0,0,0,0.3)', border: `1px solid ${theme === 'dark' ? '#332959' : '#e5e7eb'}` }}>
+          <div className="admin-modal-backdrop" style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+            <div className="admin-modal-dialog" style={{ width: '100%', maxWidth: '640px', background: theme === 'dark' ? '#18142a' : '#fff', color: theme === 'dark' ? '#f0eeff' : '#1f1b2e', borderRadius: '16px', padding: '24px', boxShadow: '0 25px 60px rgba(0,0,0,0.3)', border: `1px solid ${theme === 'dark' ? '#332959' : '#e5e7eb'}` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${theme === 'dark' ? '#261f42' : '#eee'}`, paddingBottom: '14px', marginBottom: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ background: '#ede9fe', color: '#6d55d8', padding: '8px', borderRadius: '10px', display: 'flex' }}>
+                  <span className="anim-pop" style={{ background: '#ede9fe', color: '#6d55d8', padding: '8px', borderRadius: '10px', display: 'flex' }}>
                     <Icon name="calendar" size={20}/>
                   </span>
                   <div>
-                    <h2 style={{ fontSize: '17px', margin: 0 }}>Calendar & Scheduled Deadlines</h2>
+                    <h2 style={{ fontSize: '17px', margin: 0, fontWeight: 700 }}>Calendar & Scheduled Deadlines</h2>
                     <small style={{ color: '#888' }}>Google Calendar API & Celery Beat Deadline Reminders</small>
                   </div>
                 </div>
-                <button onClick={() => setShowCalendarModal(false)} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#888' }}>✕</button>
+                <button className="btn-anim" onClick={() => setShowCalendarModal(false)} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#888' }}>✕</button>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '12px 16px', borderRadius: '10px', marginBottom: '18px' }}>
+              <div className="admin-spec-card hover-lift" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '12px 16px', borderRadius: '10px', marginBottom: '18px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
                 <div>
                   <b style={{ fontSize: '13px', display: 'block' }}>Automated Celery Beat Reminders</b>
                   <span style={{ fontSize: '11px', color: '#888' }}>Runs hourly to scan upcoming deadlines and dispatch email alerts to assignees.</span>
                 </div>
                 <button
-                  className="button small"
+                  className="button small btn-anim"
                   onClick={handleTriggerReminders}
                   style={{ whiteSpace: 'nowrap' }}
                 >
@@ -3596,6 +5175,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                 {calendarEvents.map((evt, i) => (
                   <div
                     key={i}
+                    className="calendar-event-card hover-lift"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -3604,6 +5184,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                       borderRadius: '10px',
                       border: `1px solid ${theme === 'dark' ? '#2b2349' : '#eef0f4'}`,
                       background: theme === 'dark' ? '#1c1731' : '#fff',
+                      animationDelay: `${i * 50}ms`,
                     }}
                   >
                     <div>
@@ -3615,7 +5196,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                     <button
                       type="button"
                       onClick={() => handleSyncToCalendar(evt)}
-                      className="button small"
+                      className="button small btn-anim"
                       style={{ fontSize: '11px', padding: '6px 12px', gap: '6px' }}
                     >
                       <Icon name="calendar" size={13}/> Add to Google Calendar
@@ -3629,13 +5210,13 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
 
         {/* Admin Control Panel Modal */}
         {showAdminModal && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <div style={{ width: '100%', maxWidth: '880px', maxHeight: '90vh', overflowY: 'auto', background: theme === 'dark' ? '#18142a' : '#fff', color: theme === 'dark' ? '#f0eeff' : '#1f1b2e', borderRadius: '18px', padding: '28px', boxShadow: '0 30px 80px rgba(0,0,0,0.4)', border: `1px solid ${theme === 'dark' ? '#332959' : '#e5e7eb'}` }}>
+          <div className="admin-modal-backdrop" style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <div className="admin-modal-dialog" style={{ width: '100%', maxWidth: '880px', maxHeight: '90vh', overflowY: 'auto', background: theme === 'dark' ? '#18142a' : '#fff', color: theme === 'dark' ? '#f0eeff' : '#1f1b2e', borderRadius: '18px', padding: '28px', boxShadow: '0 30px 80px rgba(0,0,0,0.4)', border: `1px solid ${theme === 'dark' ? '#332959' : '#e5e7eb'}` }}>
               
               {/* Modal Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${theme === 'dark' ? '#261f42' : '#eee'}`, paddingBottom: '16px', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ background: '#7c3aed', color: '#fff', padding: '10px', borderRadius: '12px', display: 'flex' }}>
+                  <span className="anim-pop" style={{ background: '#7c3aed', color: '#fff', padding: '10px', borderRadius: '12px', display: 'flex' }}>
                     <Icon name="spark" size={22}/>
                   </span>
                   <div>
@@ -3643,7 +5224,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                     <small style={{ color: '#888' }}>User Management, Cross-Meeting Oversight & Model Diagnostics</small>
                   </div>
                 </div>
-                <button onClick={() => setShowAdminModal(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#888' }}>✕</button>
+                <button className="btn-anim" onClick={() => setShowAdminModal(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#888' }}>✕</button>
               </div>
 
               {adminNotice && (
@@ -3653,365 +5234,363 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
               )}
 
               {/* Tab Selector */}
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '22px' }}>
-                <button
-                  type="button"
-                  onClick={() => setAdminTab('overview')}
-                  style={{ padding: '8px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: '1px solid #7c3aed', background: adminTab === 'overview' ? '#7c3aed' : 'transparent', color: adminTab === 'overview' ? '#fff' : 'inherit' }}
-                >
-                  System & Model Diagnostics
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAdminTab('users')}
-                  style={{ padding: '8px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: '1px solid #7c3aed', background: adminTab === 'users' ? '#7c3aed' : 'transparent', color: adminTab === 'users' ? '#fff' : 'inherit' }}
-                >
-                  User Roster ({adminUsers.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAdminTab('meetings')}
-                  style={{ padding: '8px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: '1px solid #7c3aed', background: adminTab === 'meetings' ? '#7c3aed' : 'transparent', color: adminTab === 'meetings' ? '#fff' : 'inherit' }}
-                >
-                  Meetings ({adminMeetings.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAdminTab('evaluation')}
-                  style={{ padding: '8px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: '1px solid #7c3aed', background: adminTab === 'evaluation' ? '#7c3aed' : 'transparent', color: adminTab === 'evaluation' ? '#fff' : 'inherit' }}
-                >
-                  📊 Model Evaluation (WER, ROUGE, F1)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAdminTab('registry')}
-                  style={{ padding: '8px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: '1px solid #7c3aed', background: adminTab === 'registry' ? '#7c3aed' : 'transparent', color: adminTab === 'registry' ? '#fff' : 'inherit' }}
-                >
-                  ⚡ Model Versioning & Rollback
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAdminTab('training')}
-                  style={{ padding: '8px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: '1px solid #7c3aed', background: adminTab === 'training' ? '#7c3aed' : 'transparent', color: adminTab === 'training' ? '#fff' : 'inherit' }}
-                >
-                  🧠 Human Retraining Dataset
-                </button>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '22px', flexWrap: 'wrap' }}>
+                {[
+                  { id: 'overview', label: 'System & Model Diagnostics' },
+                  { id: 'users', label: `User Roster (${adminUsers.length})` },
+                  { id: 'meetings', label: `Meetings (${adminMeetings.length})` },
+                  { id: 'evaluation', label: '📊 Model Evaluation (WER, ROUGE, F1)' },
+                  { id: 'registry', label: '⚡ Model Versioning & Rollback' },
+                  { id: 'training', label: '🧠 Human Retraining Dataset' },
+                  { id: 'compliance', label: '🛡️ SOC2 & GDPR Compliance Vault' },
+                  { id: 'keywords', label: '🎯 Risk & Keyword Watchlist' },
+                ].map((t, idx) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setAdminTab(t.id as any)}
+                    className="filter-pill-anim btn-anim"
+                    style={{
+                      padding: '8px 18px',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      border: '1px solid #7c3aed',
+                      background: adminTab === t.id ? '#7c3aed' : 'transparent',
+                      color: adminTab === t.id ? '#fff' : 'inherit',
+                      animationDelay: `${idx * 45}ms`,
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
               </div>
 
-              {adminLoading ? (
-                <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>Loading administrator metrics...</div>
-              ) : adminTab === 'overview' ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                  {/* Top Stats Cards */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
-                    <div style={{ background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
-                      <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Total Users</span>
-                      <h3 style={{ fontSize: '26px', margin: '4px 0 0', color: '#7c3aed' }}>{adminStats?.users?.total || adminUsers.length}</h3>
-                      <small style={{ color: '#888', fontSize: '11px' }}>{(adminStats?.users?.admins || 1) === 1 ? '1 admin' : `${adminStats?.users?.admins} admins`} · {adminStats?.users?.active || 1} active</small>
+              <div key={adminTab} className="admin-tab-content">
+                {adminLoading ? (
+                  <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>Loading administrator metrics...</div>
+                ) : adminTab === 'overview' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                    {/* Top Stats Cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
+                      <div className="stat-metric-card hover-lift" style={{ background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}`, animationDelay: '0ms' }}>
+                        <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Total Users</span>
+                        <h3 style={{ fontSize: '26px', margin: '4px 0 0', color: '#7c3aed' }}>{adminStats?.users?.total || adminUsers.length}</h3>
+                        <small style={{ color: '#888', fontSize: '11px' }}>{(adminStats?.users?.admins || 1) === 1 ? '1 admin' : `${adminStats?.users?.admins} admins`} · {adminStats?.users?.active || 1} active</small>
+                      </div>
+
+                      <div className="stat-metric-card hover-lift" style={{ background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}`, animationDelay: '60ms' }}>
+                        <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Total Meetings</span>
+                        <h3 style={{ fontSize: '26px', margin: '4px 0 0', color: '#2563eb' }}>{adminStats?.meetings?.total || adminMeetings.length}</h3>
+                        <small style={{ color: '#888', fontSize: '11px' }}>{adminStats?.meetings?.total_audio_hours || '3.47'} hrs audio processed</small>
+                      </div>
+
+                      <div className="stat-metric-card hover-lift" style={{ background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}`, animationDelay: '120ms' }}>
+                        <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>AI Action Items</span>
+                        <h3 style={{ fontSize: '26px', margin: '4px 0 0', color: '#059669' }}>{adminStats?.nlp_metrics?.total_action_items || tasksList.length}</h3>
+                        <small style={{ color: '#888', fontSize: '11px' }}>{adminStats?.nlp_metrics?.total_decisions || 2} Key decisions</small>
+                      </div>
+
+                      <div className="stat-metric-card hover-lift" style={{ background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}`, animationDelay: '180ms' }}>
+                        <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Diarized Segments</span>
+                        <h3 style={{ fontSize: '26px', margin: '4px 0 0', color: '#d97706' }}>{adminStats?.nlp_metrics?.total_diarized_segments || 18}</h3>
+                        <small style={{ color: '#888', fontSize: '11px' }}>Whisper + pyannote turns</small>
+                      </div>
                     </div>
 
-                    <div style={{ background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
-                      <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Total Meetings</span>
-                      <h3 style={{ fontSize: '26px', margin: '4px 0 0', color: '#2563eb' }}>{adminStats?.meetings?.total || adminMeetings.length}</h3>
-                      <small style={{ color: '#888', fontSize: '11px' }}>{adminStats?.meetings?.total_audio_hours || '3.47'} hrs audio processed</small>
-                    </div>
-
-                    <div style={{ background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
-                      <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>AI Action Items</span>
-                      <h3 style={{ fontSize: '26px', margin: '4px 0 0', color: '#059669' }}>{adminStats?.nlp_metrics?.total_action_items || tasksList.length}</h3>
-                      <small style={{ color: '#888', fontSize: '11px' }}>{adminStats?.nlp_metrics?.total_decisions || 2} Key decisions</small>
-                    </div>
-
-                    <div style={{ background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
-                      <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Diarized Segments</span>
-                      <h3 style={{ fontSize: '26px', margin: '4px 0 0', color: '#d97706' }}>{adminStats?.nlp_metrics?.total_diarized_segments || 18}</h3>
-                      <small style={{ color: '#888', fontSize: '11px' }}>Whisper + pyannote turns</small>
+                    {/* Architecture & Stack Overview */}
+                    <div className="admin-spec-card hover-lift" style={{ background: theme === 'dark' ? '#1f1a35' : '#faf9fd', padding: '20px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
+                      <h4 style={{ margin: '0 0 12px', fontSize: '14px', fontWeight: 700, color: '#7c3aed' }}>ML & NLP Pipeline Architecture Specifications</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px', fontSize: '12px' }}>
+                        <div><b>Sentence Classifier:</b> <span style={{ color: '#888' }}>DistilBERT (distilbert-base-uncased) Macro F1: 0.940</span></div>
+                        <div><b>Entity & Deadline Extraction:</b> <span style={{ color: '#888' }}>spaCy NER + dateparser (Owner, Due Date, Priority)</span></div>
+                        <div><b>Speech-to-Text:</b> <span style={{ color: '#888' }}>OpenAI / Faster Whisper with timestamped segments</span></div>
+                        <div><b>Speaker Diarization:</b> <span style={{ color: '#888' }}>pyannote.audio voice biometric turn clustering</span></div>
+                        <div><b>Storage Provider:</b> <span style={{ color: '#888' }}>Encrypted Cloud Storage (Private Tier)</span></div>
+                        <div><b>Vector Embeddings:</b> <span style={{ color: '#888' }}>sentence-transformers/all-MiniLM-L6-v2 (384-dim)</span></div>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Architecture & Stack Overview */}
-                  <div style={{ background: theme === 'dark' ? '#1f1a35' : '#faf9fd', padding: '20px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
-                    <h4 style={{ margin: '0 0 12px', fontSize: '14px', fontWeight: 700, color: '#7c3aed' }}>ML & NLP Pipeline Architecture Specifications</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px', fontSize: '12px' }}>
-                      <div><b>Sentence Classifier:</b> <span style={{ color: '#888' }}>DistilBERT (distilbert-base-uncased) Macro F1: 0.940</span></div>
-                      <div><b>Entity & Deadline Extraction:</b> <span style={{ color: '#888' }}>spaCy NER + dateparser (Owner, Due Date, Priority)</span></div>
-                      <div><b>Speech-to-Text:</b> <span style={{ color: '#888' }}>OpenAI / Faster Whisper with timestamped segments</span></div>
-                      <div><b>Speaker Diarization:</b> <span style={{ color: '#888' }}>pyannote.audio voice biometric turn clustering</span></div>
-                      <div><b>Storage Provider:</b> <span style={{ color: '#888' }}>Encrypted Cloud Storage (Private Tier)</span></div>
-                      <div><b>Vector Embeddings:</b> <span style={{ color: '#888' }}>sentence-transformers/all-MiniLM-L6-v2 (384-dim)</span></div>
-                    </div>
-                  </div>
-                </div>
-              ) : adminTab === 'users' ? (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                    <thead>
-                      <tr style={{ borderBottom: `2px solid ${theme === 'dark' ? '#2e264f' : '#e5e7eb'}`, textAlign: 'left', color: '#888' }}>
-                        <th style={{ padding: '10px 8px' }}>User</th>
-                        <th style={{ padding: '10px 8px' }}>Email</th>
-                        <th style={{ padding: '10px 8px' }}>Role</th>
-                        <th style={{ padding: '10px 8px' }}>Status</th>
-                        <th style={{ padding: '10px 8px', textAlign: 'right' }}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {adminUsers.map((u) => (
-                        <tr key={u.id} style={{ borderBottom: `1px solid ${theme === 'dark' ? '#261f42' : '#f3f4f6'}` }}>
-                          <td style={{ padding: '12px 8px', fontWeight: 600 }}>{u.full_name || 'User'}</td>
-                          <td style={{ padding: '12px 8px', color: '#888' }}>{u.email}</td>
-                          <td style={{ padding: '12px 8px' }}>
-                            <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', fontWeight: 600, background: u.role === 'admin' ? '#ede9fe' : '#e0f2fe', color: u.role === 'admin' ? '#6d28d9' : '#0369a1' }}>
-                              {(u.role || 'user').toUpperCase()}
-                            </span>
-                          </td>
-                          <td style={{ padding: '12px 8px' }}>
-                            <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', fontWeight: 600, background: u.is_active !== false ? '#dcfce7' : '#fee2e2', color: u.is_active !== false ? '#15803d' : '#b91c1c' }}>
-                              {u.is_active !== false ? 'Active' : 'Disabled'}
-                            </span>
-                          </td>
-                          <td style={{ padding: '12px 8px', textAlign: 'right' }}>
-                            <div style={{ display: 'inline-flex', gap: '6px' }}>
-                              <button
-                                type="button"
-                                onClick={() => handleRoleToggle(u.id, u.role)}
-                                style={{ fontSize: '11px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #7c3aed', background: 'transparent', color: '#7c3aed', cursor: 'pointer' }}
-                              >
-                                Toggle Role
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleStatusToggle(u.id, u.is_active !== false)}
-                                style={{ fontSize: '11px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #94a3b8', background: 'transparent', color: '#64748b', cursor: 'pointer' }}
-                              >
-                                {u.is_active !== false ? 'Disable' : 'Enable'}
-                              </button>
-                            </div>
-                          </td>
+                ) : adminTab === 'users' ? (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                      <thead>
+                        <tr style={{ borderBottom: `2px solid ${theme === 'dark' ? '#2e264f' : '#e5e7eb'}`, textAlign: 'left', color: '#888' }}>
+                          <th style={{ padding: '10px 8px' }}>User</th>
+                          <th style={{ padding: '10px 8px' }}>Email</th>
+                          <th style={{ padding: '10px 8px' }}>Role</th>
+                          <th style={{ padding: '10px 8px' }}>Status</th>
+                          <th style={{ padding: '10px 8px', textAlign: 'right' }}>Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : adminTab === 'meetings' ? (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                    <thead>
-                      <tr style={{ borderBottom: `2px solid ${theme === 'dark' ? '#2e264f' : '#e5e7eb'}`, textAlign: 'left', color: '#888' }}>
-                        <th style={{ padding: '10px 8px' }}>Meeting Title</th>
-                        <th style={{ padding: '10px 8px' }}>Owner</th>
-                        <th style={{ padding: '10px 8px' }}>Duration</th>
-                        <th style={{ padding: '10px 8px' }}>Tasks</th>
-                        <th style={{ padding: '10px 8px' }}>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {adminMeetings.map((m) => (
-                        <tr key={m.id} style={{ borderBottom: `1px solid ${theme === 'dark' ? '#261f42' : '#f3f4f6'}` }}>
-                          <td style={{ padding: '12px 8px', fontWeight: 600 }}>{m.title}</td>
-                          <td style={{ padding: '12px 8px', color: '#888' }}>{m.owner?.email || 'Current User'}</td>
-                          <td style={{ padding: '12px 8px' }}>{Math.round((m.duration_seconds || 2500) / 60)} min</td>
-                          <td style={{ padding: '12px 8px' }}>{m.stats?.action_items_count || 2} action items</td>
-                          <td style={{ padding: '12px 8px' }}>
-                            <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', fontWeight: 600, background: '#dcfce7', color: '#15803d' }}>
-                              Completed
-                            </span>
-                          </td>
+                      </thead>
+                      <tbody>
+                        {adminUsers.map((u, uIdx) => (
+                          <tr key={u.id} className="admin-table-row" style={{ animationDelay: `${uIdx * 35}ms`, borderBottom: `1px solid ${theme === 'dark' ? '#261f42' : '#f3f4f6'}` }}>
+                            <td style={{ padding: '12px 8px', fontWeight: 600 }}>{u.full_name || 'User'}</td>
+                            <td style={{ padding: '12px 8px', color: '#888' }}>{u.email}</td>
+                            <td style={{ padding: '12px 8px' }}>
+                              <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', fontWeight: 600, background: u.role === 'admin' ? '#ede9fe' : '#e0f2fe', color: u.role === 'admin' ? '#6d28d9' : '#0369a1' }}>
+                                {(u.role || 'user').toUpperCase()}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 8px' }}>
+                              <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', fontWeight: 600, background: u.is_active !== false ? '#dcfce7' : '#fee2e2', color: u.is_active !== false ? '#15803d' : '#b91c1c' }}>
+                                {u.is_active !== false ? 'Active' : 'Disabled'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 8px', textAlign: 'right' }}>
+                              <div style={{ display: 'inline-flex', gap: '6px' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRoleToggle(u.id, u.role)}
+                                  className="btn-anim"
+                                  style={{ fontSize: '11px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #7c3aed', background: 'transparent', color: '#7c3aed', cursor: 'pointer' }}
+                                >
+                                  Toggle Role
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleStatusToggle(u.id, u.is_active !== false)}
+                                  className="btn-anim"
+                                  style={{ fontSize: '11px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #94a3b8', background: 'transparent', color: '#64748b', cursor: 'pointer' }}
+                                >
+                                  {u.is_active !== false ? 'Disable' : 'Enable'}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : adminTab === 'meetings' ? (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                      <thead>
+                        <tr style={{ borderBottom: `2px solid ${theme === 'dark' ? '#2e264f' : '#e5e7eb'}`, textAlign: 'left', color: '#888' }}>
+                          <th style={{ padding: '10px 8px' }}>Meeting Title</th>
+                          <th style={{ padding: '10px 8px' }}>Owner</th>
+                          <th style={{ padding: '10px 8px' }}>Duration</th>
+                          <th style={{ padding: '10px 8px' }}>Tasks</th>
+                          <th style={{ padding: '10px 8px' }}>Status</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : adminTab === 'evaluation' ? (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
-                    <div>
-                      <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>AI Model Evaluation & Quality Benchmarks</h3>
-                      <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#888' }}>
-                        Shows live Precision, Recall, and F1 for sentence classifier, Word Error Rate (WER) for Whisper STT, and ROUGE for summarization.
-                      </p>
-                    </div>
-                    <span style={{ fontSize: '11px', background: '#dcfce7', color: '#15803d', padding: '4px 10px', borderRadius: '12px', fontWeight: 600 }}>
-                      Live Benchmarks (Test Set: {adminEval?.dataset_size || 2400} utterances)
-                    </span>
+                      </thead>
+                      <tbody>
+                        {adminMeetings.map((m, mIdx) => (
+                          <tr key={m.id} className="admin-table-row" style={{ animationDelay: `${mIdx * 35}ms`, borderBottom: `1px solid ${theme === 'dark' ? '#261f42' : '#f3f4f6'}` }}>
+                            <td style={{ padding: '12px 8px', fontWeight: 600 }}>{m.title}</td>
+                            <td style={{ padding: '12px 8px', color: '#888' }}>{m.owner?.email || 'Current User'}</td>
+                            <td style={{ padding: '12px 8px' }}>{Math.round((m.duration_seconds || 2500) / 60)} min</td>
+                            <td style={{ padding: '12px 8px' }}>{m.stats?.action_items_count || 2} action items</td>
+                            <td style={{ padding: '12px 8px' }}>
+                              <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', fontWeight: 600, background: '#dcfce7', color: '#15803d' }}>
+                                Completed
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-
-                  {/* Top Metric Cards */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '22px' }}>
-                    <div style={{ background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
-                      <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Sentence Classifier</span>
-                      <h3 style={{ fontSize: '24px', margin: '4px 0 0', color: '#7c3aed' }}>F1: 91.6%</h3>
-                      <small style={{ color: '#888', fontSize: '11px' }}>Precision: 92.4% • Recall: 90.8%</small>
+                ) : adminTab === 'evaluation' ? (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>AI Model Evaluation & Quality Benchmarks</h3>
+                        <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#888' }}>
+                          Shows live Precision, Recall, and F1 for sentence classifier, Word Error Rate (WER) for Whisper STT, and ROUGE for summarization.
+                        </p>
+                      </div>
+                      <span className="team-status-badge active" style={{ fontSize: '11px', background: '#dcfce7', color: '#15803d', padding: '4px 10px', borderRadius: '12px', fontWeight: 600 }}>
+                        Live Benchmarks (Test Set: {adminEval?.dataset_size || 2400} utterances)
+                      </span>
                     </div>
 
-                    <div style={{ background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
-                      <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Whisper Large v3 (STT)</span>
-                      <h3 style={{ fontSize: '24px', margin: '4px 0 0', color: '#10b981' }}>WER: 5.8%</h3>
-                      <small style={{ color: '#888', fontSize: '11px' }}>CER: 2.4% • Latency: 140ms</small>
+                    {/* Top Metric Cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '22px' }}>
+                      <div className="stat-metric-card hover-lift" style={{ background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}`, animationDelay: '0ms' }}>
+                        <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Sentence Classifier</span>
+                        <h3 style={{ fontSize: '24px', margin: '4px 0 0', color: '#7c3aed' }}>F1: 91.6%</h3>
+                        <small style={{ color: '#888', fontSize: '11px' }}>Precision: 92.4% • Recall: 90.8%</small>
+                      </div>
+
+                      <div className="stat-metric-card hover-lift" style={{ background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}`, animationDelay: '60ms' }}>
+                        <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Whisper Large v3 (STT)</span>
+                        <h3 style={{ fontSize: '24px', margin: '4px 0 0', color: '#10b981' }}>WER: 5.8%</h3>
+                        <small style={{ color: '#888', fontSize: '11px' }}>CER: 2.4% • Latency: 140ms</small>
+                      </div>
+
+                      <div className="stat-metric-card hover-lift" style={{ background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}`, animationDelay: '120ms' }}>
+                        <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>BART Summarizer</span>
+                        <h3 style={{ fontSize: '24px', margin: '4px 0 0', color: '#3b82f6' }}>ROUGE-L: 0.441</h3>
+                        <small style={{ color: '#888', fontSize: '11px' }}>ROUGE-1: 0.482 • ROUGE-2: 0.285</small>
+                      </div>
+
+                      <div className="stat-metric-card hover-lift" style={{ background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}`, animationDelay: '180ms' }}>
+                        <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Human-in-the-Loop</span>
+                        <h3 style={{ fontSize: '24px', margin: '4px 0 0', color: '#f59e0b' }}>{adminEval?.human_corrections_collected || 8} Fixed</h3>
+                        <small style={{ color: '#888', fontSize: '11px' }}>Labeled for next model fine-tune</small>
+                      </div>
                     </div>
 
-                    <div style={{ background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
-                      <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>BART Summarizer</span>
-                      <h3 style={{ fontSize: '24px', margin: '4px 0 0', color: '#3b82f6' }}>ROUGE-L: 0.441</h3>
-                      <small style={{ color: '#888', fontSize: '11px' }}>ROUGE-1: 0.482 • ROUGE-2: 0.285</small>
-                    </div>
+                    {/* 4x4 Confusion Matrix */}
+                    <div className="admin-spec-card hover-lift" style={{ background: theme === 'dark' ? '#1f1a35' : '#faf9fd', padding: '20px', borderRadius: '14px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                        <b style={{ fontSize: '14px' }}>4x4 Intent Classification Confusion Matrix</b>
+                        <span style={{ fontSize: '11px', color: '#888' }}>Evaluated on {adminEval?.confusion_matrix?.total_samples || 770} human-verified utterances</span>
+                      </div>
 
-                    <div style={{ background: theme === 'dark' ? '#211c38' : '#f8f7fb', padding: '16px', borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
-                      <span style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', fontWeight: 700 }}>Human-in-the-Loop</span>
-                      <h3 style={{ fontSize: '24px', margin: '4px 0 0', color: '#f59e0b' }}>{adminEval?.human_corrections_collected || 8} Fixed</h3>
-                      <small style={{ color: '#888', fontSize: '11px' }}>Labeled for next model fine-tune</small>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: 'center' }}>
+                          <thead>
+                            <tr style={{ color: '#888', borderBottom: '2px solid #ccc' }}>
+                              <th style={{ padding: '8px', textAlign: 'left' }}>True Class \ Predicted</th>
+                              <th style={{ padding: '8px' }}>Action Item</th>
+                              <th style={{ padding: '8px' }}>Decision</th>
+                              <th style={{ padding: '8px' }}>Key Discussion</th>
+                              <th style={{ padding: '8px' }}>General</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[
+                              { label: "Action Item", row: [186, 6, 5, 3] },
+                              { label: "Decision", row: [4, 142, 3, 1] },
+                              { label: "Key Discussion", row: [5, 2, 218, 15] },
+                              { label: "General / Chit-Chat", row: [2, 1, 12, 175] },
+                            ].map((r, ri) => (
+                              <tr key={ri} style={{ borderBottom: `1px solid ${theme === 'dark' ? '#261f42' : '#f0f0f0'}` }}>
+                                <td style={{ padding: '10px 8px', textAlign: 'left', fontWeight: 700, color: '#6d55d8' }}>{r.label}</td>
+                                {r.row.map((val, ci) => (
+                                  <td
+                                    key={ci}
+                                    className="confusion-cell"
+                                    style={{
+                                      padding: '10px 8px',
+                                      fontWeight: ri === ci ? 800 : 500,
+                                      background: ri === ci ? 'rgba(16,185,129,0.18)' : (val > 5 ? 'rgba(245,158,11,0.12)' : 'transparent'),
+                                      color: ri === ci ? '#10b981' : (val > 5 ? '#f59e0b' : 'inherit'),
+                                      borderRadius: '6px',
+                                      cursor: 'default',
+                                    }}
+                                  >
+                                    {val} {ri === ci && '✓'}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
-
-                  {/* 4x4 Confusion Matrix */}
-                  <div style={{ background: theme === 'dark' ? '#1f1a35' : '#faf9fd', padding: '20px', borderRadius: '14px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#eef0f4'}` }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                      <b style={{ fontSize: '14px' }}>4x4 Intent Classification Confusion Matrix</b>
-                      <span style={{ fontSize: '11px', color: '#888' }}>Evaluated on {adminEval?.confusion_matrix?.total_samples || 770} human-verified utterances</span>
+                ) : adminTab === 'registry' ? (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Model Versioning & Rollback Registry</h3>
+                        <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#888' }}>
+                          Track which model version produced each output. Compare checkpoint accuracy and roll back production models with zero downtime.
+                        </p>
+                      </div>
                     </div>
 
                     <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: 'center' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                         <thead>
-                          <tr style={{ color: '#888', borderBottom: '2px solid #ccc' }}>
-                            <th style={{ padding: '8px', textAlign: 'left' }}>True Class \ Predicted</th>
-                            <th style={{ padding: '8px' }}>Action Item</th>
-                            <th style={{ padding: '8px' }}>Decision</th>
-                            <th style={{ padding: '8px' }}>Key Discussion</th>
-                            <th style={{ padding: '8px' }}>General</th>
+                          <tr style={{ borderBottom: `2px solid ${theme === 'dark' ? '#2e264f' : '#e5e7eb'}`, textAlign: 'left', color: '#888' }}>
+                            <th style={{ padding: '10px 8px' }}>Task Type</th>
+                            <th style={{ padding: '10px 8px' }}>Model Name</th>
+                            <th style={{ padding: '10px 8px' }}>Version</th>
+                            <th style={{ padding: '10px 8px' }}>Status</th>
+                            <th style={{ padding: '10px 8px' }}>Metrics</th>
+                            <th style={{ padding: '10px 8px', textAlign: 'right' }}>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
                           {[
-                            { label: "Action Item", row: [186, 6, 5, 3] },
-                            { label: "Decision", row: [4, 142, 3, 1] },
-                            { label: "Key Discussion", row: [5, 2, 218, 15] },
-                            { label: "General / Chit-Chat", row: [2, 1, 12, 175] },
-                          ].map((r, ri) => (
-                            <tr key={ri} style={{ borderBottom: `1px solid ${theme === 'dark' ? '#261f42' : '#f0f0f0'}` }}>
-                              <td style={{ padding: '10px 8px', textAlign: 'left', fontWeight: 700, color: '#6d55d8' }}>{r.label}</td>
-                              {r.row.map((val, ci) => (
-                                <td
-                                  key={ci}
-                                  style={{
-                                    padding: '10px 8px',
-                                    fontWeight: ri === ci ? 800 : 500,
-                                    background: ri === ci ? 'rgba(16,185,129,0.18)' : (val > 5 ? 'rgba(245,158,11,0.12)' : 'transparent'),
-                                    color: ri === ci ? '#10b981' : (val > 5 ? '#f59e0b' : 'inherit'),
-                                    borderRadius: '6px',
-                                  }}
-                                >
-                                  {val} {ri === ci && '✓'}
-                                </td>
-                              ))}
+                            { id: 1, task: "classifier", name: "DistilBERT Sentence Classifier", version: "v2.4.0", active: true, metric: "F1: 91.6% • Acc: 93.2%" },
+                            { id: 2, task: "classifier", name: "DistilBERT Sentence Classifier", version: "v2.3.1", active: false, metric: "F1: 88.3% • Acc: 89.8%" },
+                            { id: 3, task: "stt", name: "Whisper Large v3 Turbo", version: "v3.0.0", active: true, metric: "WER: 5.8% • CER: 2.4%" },
+                            { id: 4, task: "summarizer", name: "BART Hierarchical Summarizer", version: "v1.8.0", active: true, metric: "ROUGE-L: 0.441" },
+                            { id: 5, task: "rag", name: "Meetora RAG Embedding Engine", version: "v1.2.0", active: true, metric: "MRR: 0.892 • NDCG: 0.915" },
+                          ].map((m, mIdx) => (
+                            <tr key={m.id} className="admin-table-row" style={{ animationDelay: `${mIdx * 35}ms`, borderBottom: `1px solid ${theme === 'dark' ? '#261f42' : '#f3f4f6'}` }}>
+                              <td style={{ padding: '12px 8px', textTransform: 'capitalize', fontWeight: 600 }}>{m.task}</td>
+                              <td style={{ padding: '12px 8px' }}>{m.name}</td>
+                              <td style={{ padding: '12px 8px', fontFamily: 'monospace', fontWeight: 700 }}>{m.version}</td>
+                              <td style={{ padding: '12px 8px' }}>
+                                <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', fontWeight: 600, background: m.active ? '#dcfce7' : '#f3f4f6', color: m.active ? '#15803d' : '#888' }}>
+                                  {m.active ? '● Active Production' : 'Inactive Checkpoint'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '12px 8px', fontSize: '12px', color: '#6d55d8', fontWeight: 600 }}>{m.metric}</td>
+                              <td style={{ padding: '12px 8px', textAlign: 'right' }}>
+                                {m.active ? (
+                                  <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 600 }}>In Use</span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleModelRollback(m.task, m.version)}
+                                    className="button small btn-anim"
+                                    style={{ fontSize: '11px', padding: '4px 10px', background: '#f59e0b', color: '#fff', border: 'none' }}
+                                  >
+                                    Rollback to {m.version}
+                                  </button>
+                                )}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
                   </div>
-                </div>
-              ) : adminTab === 'registry' ? (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
-                    <div>
-                      <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Model Versioning & Rollback Registry</h3>
-                      <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#888' }}>
-                        Track which model version produced each output. Compare checkpoint accuracy and roll back production models with zero downtime.
-                      </p>
+                ) : adminTab === 'compliance' ? (
+                  <ComplianceAuditVault theme={theme} />
+                ) : adminTab === 'keywords' ? (
+                  <TrackedKeywordsView theme={theme} />
+                ) : (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Human-in-the-Loop Labeled Retraining Dataset</h3>
+                        <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#888' }}>
+                          Whenever users edit action items, fix assignees, or adjust deadlines, the corrections are recorded here to retrain your DistilBERT classifier.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                        <thead>
+                          <tr style={{ borderBottom: `2px solid ${theme === 'dark' ? '#2e264f' : '#e5e7eb'}`, textAlign: 'left', color: '#888' }}>
+                            <th style={{ padding: '10px 8px' }}>Original AI Output</th>
+                            <th style={{ padding: '10px 8px' }}>Human-Corrected Text</th>
+                            <th style={{ padding: '10px 8px' }}>Assignee Fix</th>
+                            <th style={{ padding: '10px 8px' }}>Deadline Fix</th>
+                            <th style={{ padding: '10px 8px' }}>Model Version</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { id: 1, orig: "Onboarding flow ready by Friday", fix: "Finalize mobile auth onboarding flow", asgn: "Sarah Kim", due: "Friday", ver: "distilbert-v2.4" },
+                            { id: 2, orig: "API docs by Monday", fix: "Share API documentation and Postman collection", asgn: "Marcus Lee", due: "Monday", ver: "distilbert-v2.4" },
+                            { id: 3, orig: "Schedule beta interviews", fix: "Schedule 5 customer beta discovery interviews", asgn: "Jamie Miller", due: "Aug 2", ver: "distilbert-v2.4" },
+                          ].map((c, cIdx) => (
+                            <tr key={c.id} className="admin-table-row" style={{ animationDelay: `${cIdx * 35}ms`, borderBottom: `1px solid ${theme === 'dark' ? '#261f42' : '#f3f4f6'}` }}>
+                              <td style={{ padding: '10px 8px', color: '#888' }}>{c.orig}</td>
+                              <td style={{ padding: '10px 8px', fontWeight: 600, color: '#10b981' }}>{c.fix}</td>
+                              <td style={{ padding: '10px 8px' }}>{c.asgn}</td>
+                              <td style={{ padding: '10px 8px' }}>{c.due}</td>
+                              <td style={{ padding: '10px 8px', fontFamily: 'monospace' }}>{c.ver}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
-
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                      <thead>
-                        <tr style={{ borderBottom: `2px solid ${theme === 'dark' ? '#2e264f' : '#e5e7eb'}`, textAlign: 'left', color: '#888' }}>
-                          <th style={{ padding: '10px 8px' }}>Task Type</th>
-                          <th style={{ padding: '10px 8px' }}>Model Name</th>
-                          <th style={{ padding: '10px 8px' }}>Version</th>
-                          <th style={{ padding: '10px 8px' }}>Status</th>
-                          <th style={{ padding: '10px 8px' }}>Metrics</th>
-                          <th style={{ padding: '10px 8px', textAlign: 'right' }}>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[
-                          { id: 1, task: "classifier", name: "DistilBERT Sentence Classifier", version: "v2.4.0", active: true, metric: "F1: 91.6% • Acc: 93.2%" },
-                          { id: 2, task: "classifier", name: "DistilBERT Sentence Classifier", version: "v2.3.1", active: false, metric: "F1: 88.3% • Acc: 89.8%" },
-                          { id: 3, task: "stt", name: "Whisper Large v3 Turbo", version: "v3.0.0", active: true, metric: "WER: 5.8% • CER: 2.4%" },
-                          { id: 4, task: "summarizer", name: "BART Hierarchical Summarizer", version: "v1.8.0", active: true, metric: "ROUGE-L: 0.441" },
-                          { id: 5, task: "rag", name: "Meetora RAG Embedding Engine", version: "v1.2.0", active: true, metric: "MRR: 0.892 • NDCG: 0.915" },
-                        ].map((m) => (
-                          <tr key={m.id} style={{ borderBottom: `1px solid ${theme === 'dark' ? '#261f42' : '#f3f4f6'}` }}>
-                            <td style={{ padding: '12px 8px', textTransform: 'capitalize', fontWeight: 600 }}>{m.task}</td>
-                            <td style={{ padding: '12px 8px' }}>{m.name}</td>
-                            <td style={{ padding: '12px 8px', fontFamily: 'monospace', fontWeight: 700 }}>{m.version}</td>
-                            <td style={{ padding: '12px 8px' }}>
-                              <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '12px', fontWeight: 600, background: m.active ? '#dcfce7' : '#f3f4f6', color: m.active ? '#15803d' : '#888' }}>
-                                {m.active ? '● Active Production' : 'Inactive Checkpoint'}
-                              </span>
-                            </td>
-                            <td style={{ padding: '12px 8px', fontSize: '12px', color: '#6d55d8', fontWeight: 600 }}>{m.metric}</td>
-                            <td style={{ padding: '12px 8px', textAlign: 'right' }}>
-                              {m.active ? (
-                                <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 600 }}>In Use</span>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => handleModelRollback(m.task, m.version)}
-                                  className="button small"
-                                  style={{ fontSize: '11px', padding: '4px 10px', background: '#f59e0b', color: '#fff', border: 'none' }}
-                                >
-                                  Rollback to {m.version}
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
-                    <div>
-                      <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Human-in-the-Loop Labeled Retraining Dataset</h3>
-                      <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#888' }}>
-                        Whenever users edit action items, fix assignees, or adjust deadlines, the corrections are recorded here to retrain your DistilBERT classifier.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                      <thead>
-                        <tr style={{ borderBottom: `2px solid ${theme === 'dark' ? '#2e264f' : '#e5e7eb'}`, textAlign: 'left', color: '#888' }}>
-                          <th style={{ padding: '10px 8px' }}>Original AI Output</th>
-                          <th style={{ padding: '10px 8px' }}>Human-Corrected Text</th>
-                          <th style={{ padding: '10px 8px' }}>Assignee Fix</th>
-                          <th style={{ padding: '10px 8px' }}>Deadline Fix</th>
-                          <th style={{ padding: '10px 8px' }}>Model Version</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[
-                          { id: 1, orig: "Onboarding flow ready by Friday", fix: "Finalize mobile auth onboarding flow", asgn: "Sarah Kim", due: "Friday", ver: "distilbert-v2.4" },
-                          { id: 2, orig: "API docs by Monday", fix: "Share API documentation and Postman collection", asgn: "Marcus Lee", due: "Monday", ver: "distilbert-v2.4" },
-                          { id: 3, orig: "Schedule beta interviews", fix: "Schedule 5 customer beta discovery interviews", asgn: "Jamie Miller", due: "Aug 2", ver: "distilbert-v2.4" },
-                        ].map((c) => (
-                          <tr key={c.id} style={{ borderBottom: `1px solid ${theme === 'dark' ? '#261f42' : '#f3f4f6'}` }}>
-                            <td style={{ padding: '10px 8px', color: '#888' }}>{c.orig}</td>
-                            <td style={{ padding: '10px 8px', fontWeight: 600, color: '#10b981' }}>{c.fix}</td>
-                            <td style={{ padding: '10px 8px' }}>{c.asgn}</td>
-                            <td style={{ padding: '10px 8px' }}>{c.due}</td>
-                            <td style={{ padding: '10px 8px', fontFamily: 'monospace' }}>{c.ver}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -4272,12 +5851,108 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
             </div>
           </div>
         )}
+
+        {/* Live Audio Recorder Modal */}
+        <LiveMeetingRecorderModal
+          isOpen={showRecorderModal}
+          onClose={() => setShowRecorderModal(false)}
+          onMeetingCreated={(created) => {
+            const mapped = {
+              id: created.id,
+              title: created.title,
+              time: 'Just now',
+              dur: `${Math.round(created.duration_seconds / 60) || 1} min`,
+              people: (created.participants && created.participants.length > 0)
+                ? created.participants.map((p: string) => p.split(' ').map((n: string) => n[0]).join('')).slice(0, 3)
+                : ['JD', 'SK'],
+              tag: (created.tags && created.tags[0]) || 'Live Recording',
+              color: created.color || 'violet',
+              status: 'completed',
+            }
+            setMeetingsList((prev) => [mapped, ...prev])
+            setHitlToast(`✓ Meeting "${created.title}" successfully recorded and ingested!`)
+          }}
+          theme={theme}
+        />
+
+        {/* Delete Confirmation Modal */}
+        <DeleteMeetingModal
+          isOpen={showDeleteModal}
+          onClose={() => {
+            if (!isDeletingMeeting) {
+              setShowDeleteModal(false)
+              setMeetingToDelete(null)
+            }
+          }}
+          onConfirm={handleConfirmDelete}
+          meetingTitle={meetingToDelete?.title || ''}
+          isBulk={isBulkDeleteModal}
+          count={selectedMeetingIds.length}
+          isDeleting={isDeletingMeeting}
+          theme={theme}
+        />
+
+        {/* Edit Meeting Details Modal */}
+        <EditMeetingModal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false)
+            setMeetingToEdit(null)
+          }}
+          meeting={meetingToEdit}
+          onSave={handleSaveMeetingDetails}
+          theme={theme}
+        />
+
+        {/* Edit Team Settings Modal */}
+        <EditTeamModal
+          isOpen={Boolean(editingTeam)}
+          onClose={() => setEditingTeam(null)}
+          onSave={handleSaveEditedTeam}
+          team={editingTeam}
+          theme={theme}
+        />
+
+        {/* Delete Team Modal */}
+        <DeleteTeamModal
+          isOpen={Boolean(deletingTeam)}
+          onClose={() => setDeletingTeam(null)}
+          onConfirm={handleDeleteTeamConfirm}
+          team={deletingTeam}
+          theme={theme}
+        />
+
+        {/* Manage Team Members & Invites Modal */}
+        <TeamMembersModal
+          isOpen={Boolean(managingMembersTeam)}
+          onClose={() => setManagingMembersTeam(null)}
+          team={managingMembersTeam}
+          currentUserId={currentUser?.id}
+          theme={theme}
+          onTeamUpdated={async () => {
+            try {
+              const updated = await teamService.getTeams()
+              if (updated && updated.length > 0) setTeamsList(updated)
+            } catch {}
+          }}
+          onLeaveTeamSuccess={async () => {
+            try {
+              const updated = await teamService.getTeams()
+              if (updated && updated.length > 0) {
+                setTeamsList(updated)
+                setActiveTeamId(updated[0].id)
+              }
+            } catch {}
+          }}
+        />
+
       {/* Persistent Floating AI Chatbot Widget (Always Available) */}
       <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9000 }}>
         {/* Floating Toggle Button */}
         <button
           type="button"
           onClick={() => setShowFloatingChat(!showFloatingChat)}
+          className="floating-ai-sparkle-btn btn-anim"
           style={{
             width: '56px',
             height: '56px',
@@ -4291,7 +5966,6 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
             alignItems: 'center',
             justifyContent: 'center',
             position: 'relative',
-            transition: 'transform 0.2s ease',
           }}
           title={showFloatingChat ? 'Close AI Chatbot' : 'Open Meetora AI Chatbot'}
         >
@@ -4316,7 +5990,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
 
         {/* Floating Chatbot Drawer Panel */}
         {showFloatingChat && (
-          <div style={{
+          <div className="floating-chat-drawer" style={{
             position: 'absolute',
             bottom: '68px',
             right: '0',
@@ -4343,7 +6017,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
               justifyContent: 'space-between'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span className="anim-pop" style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Icon name="spark" size={16}/>
                 </span>
                 <div>
@@ -4355,6 +6029,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                 <button
                   type="button"
                   onClick={() => { setShowFloatingChat(false); setDashView('chatbot'); }}
+                  className="btn-anim"
                   style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', padding: '4px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 600, cursor: 'pointer' }}
                   title="Expand to Full Page Chatbot"
                 >
@@ -4363,6 +6038,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                 <button
                   type="button"
                   onClick={() => setShowFloatingChat(false)}
+                  className="btn-anim"
                   style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '16px', cursor: 'pointer', padding: '0 4px' }}
                 >
                   ✕
@@ -4399,6 +6075,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
               {globalChatMessages.map((msg) => (
                 <div
                   key={msg.id}
+                  className="chat-bubble-anim"
                   style={{
                     alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
                     maxWidth: '88%',
@@ -4448,7 +6125,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
               ))}
 
               {globalChatLoading && (
-                <div style={{ padding: '8px 12px', borderRadius: '8px', background: theme === 'dark' ? '#211c38' : '#f4f3fa', fontSize: '11px', color: '#888', fontStyle: 'italic', alignSelf: 'flex-start' }}>
+                <div className="chat-typing-indicator" style={{ padding: '8px 12px', borderRadius: '8px', background: theme === 'dark' ? '#211c38' : '#f4f3fa', fontSize: '11px', color: '#888', fontStyle: 'italic', alignSelf: 'flex-start' }}>
                   ⚡ Searching transcripts...
                 </div>
               )}
@@ -4462,6 +6139,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                   type="button"
                   onClick={() => handleSendGlobalChat(p)}
                   disabled={globalChatLoading}
+                  className="filter-pill-anim btn-anim"
                   style={{
                     fontSize: '10px',
                     padding: '3px 8px',
@@ -4470,7 +6148,8 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
                     background: 'transparent',
                     color: 'inherit',
                     whiteSpace: 'nowrap',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    animationDelay: `${idx * 40}ms`,
                   }}
                 >
                   💡 {p}
@@ -4508,7 +6187,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
               />
               <button
                 type="submit"
-                className="button"
+                className="button btn-anim"
                 disabled={!globalChatQuery.trim() || globalChatLoading}
                 style={{ padding: '8px 14px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
               >
@@ -4532,15 +6211,17 @@ function ProfilePage({ go, theme, toggleTheme }: { go: (p: Page) => void; theme:
     if (typeof window !== 'undefined') {
       if (window.location.hash.includes('notification')) return 'notifications'
       if (window.location.hash.includes('security')) return 'security'
+      if (window.location.hash.includes('biometric')) return 'biometrics'
     }
     return 'personal'
   }
-  const [activeTab, setActiveTab] = useState<'personal' | 'security' | 'notifications'>(getInitialProfileTab)
+  const [activeTab, setActiveTab] = useState<'personal' | 'security' | 'notifications' | 'biometrics'>(getInitialProfileTab)
 
   useEffect(() => {
     const handleHashChange = () => {
       if (window.location.hash.includes('notification')) setActiveTab('notifications')
       else if (window.location.hash.includes('security')) setActiveTab('security')
+      else if (window.location.hash.includes('biometric')) setActiveTab('biometrics')
       else if (window.location.hash.includes('personal')) setActiveTab('personal')
     }
     window.addEventListener('hashchange', handleHashChange)
@@ -4937,6 +6618,15 @@ function ProfilePage({ go, theme, toggleTheme }: { go: (p: Page) => void; theme:
               }}
             >
               <Icon name="bell" /> Notifications
+            </button>
+            <button
+              className={activeTab === 'biometrics' ? 'active' : ''}
+              onClick={() => {
+                setActiveTab('biometrics')
+                window.location.hash = 'profile#biometrics'
+              }}
+            >
+              <Icon name="spark" /> Voice Biometrics
             </button>
           </aside>
 
@@ -5447,6 +7137,10 @@ function ProfilePage({ go, theme, toggleTheme }: { go: (p: Page) => void; theme:
                 </div>
               </section>
             )}
+
+            {activeTab === 'biometrics' && (
+              <VoiceprintBiometricsTab theme={theme} />
+            )}
           </div>
         </div>
       </main>
@@ -5743,19 +7437,21 @@ export default function App() {
 
   return (
     <div className={`app-root ${theme}`}>
-      {page === 'login' || page === 'register' || page === 'forgot' || page === 'verify' ? (
-        <Auth mode={page} go={go} theme={theme} toggleTheme={toggleTheme}/>
-      ) : page === 'dashboard' ? (
-        <Dashboard go={go} theme={theme} toggleTheme={toggleTheme}/>
-      ) : page === 'profile' ? (
-        <ProfilePage go={go} theme={theme} toggleTheme={toggleTheme}/>
-      ) : page === 'about' ? (
-        <AboutPage go={go} theme={theme} toggleTheme={toggleTheme}/>
-      ) : page === 'contact' ? (
-        <ContactPage go={go} theme={theme} toggleTheme={toggleTheme}/>
-      ) : (
-        <Landing go={go} theme={theme} toggleTheme={toggleTheme}/>
-      )}
+      <div key={page} className="page-transition">
+        {page === 'login' || page === 'register' || page === 'forgot' || page === 'verify' ? (
+          <Auth mode={page} go={go} theme={theme} toggleTheme={toggleTheme}/>
+        ) : page === 'dashboard' ? (
+          <Dashboard go={go} theme={theme} toggleTheme={toggleTheme}/>
+        ) : page === 'profile' ? (
+          <ProfilePage go={go} theme={theme} toggleTheme={toggleTheme}/>
+        ) : page === 'about' ? (
+          <AboutPage go={go} theme={theme} toggleTheme={toggleTheme}/>
+        ) : page === 'contact' ? (
+          <ContactPage go={go} theme={theme} toggleTheme={toggleTheme}/>
+        ) : (
+          <Landing go={go} theme={theme} toggleTheme={toggleTheme}/>
+        )}
+      </div>
     </div>
   )
 }
