@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.database import SessionLocal, Base, engine
+from app.database import SessionLocal, Base, engine, ensure_db_schema
 from app.models import User
 from app.auth import get_password_hash, create_access_token, get_totp_token
 
@@ -12,6 +12,7 @@ client = TestClient(app)
 @pytest.fixture(scope="module")
 def db():
     Base.metadata.create_all(bind=engine)
+    ensure_db_schema()
     session = SessionLocal()
     yield session
     session.close()
