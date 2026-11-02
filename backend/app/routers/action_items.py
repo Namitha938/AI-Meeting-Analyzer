@@ -6,6 +6,7 @@ from app.database import get_db
 from app.models import User, Meeting, ActionItem, HumanCorrection
 from app.schemas import ActionItemResponse, ActionItemUpdate
 from app.auth import get_current_user
+from app.routers.meetings import recompute_and_save_meeting_effectiveness
 
 router = APIRouter(prefix="/action-items", tags=["Action Items"])
 
@@ -71,6 +72,11 @@ def update_action_item(
 
     db.commit()
     db.refresh(item)
+
+    meeting = db.query(Meeting).filter(Meeting.id == item.meeting_id).first()
+    if meeting:
+        recompute_and_save_meeting_effectiveness(meeting, db)
+
     return item
 
 @router.post("/{item_id}/review", response_model=ActionItemResponse)
@@ -113,6 +119,11 @@ def review_and_approve_action_item(
     db.add(correction)
     db.commit()
     db.refresh(item)
+
+    meeting = db.query(Meeting).filter(Meeting.id == item.meeting_id).first()
+    if meeting:
+        recompute_and_save_meeting_effectiveness(meeting, db)
+
     return item
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -130,6 +141,12 @@ def delete_action_item(
     if not item:
         raise HTTPException(status_code=404, detail="Action item not found")
 
+    meeting_id = item.meeting_id
     db.delete(item)
     db.commit()
+
+    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+    if meeting:
+        recompute_and_save_meeting_effectiveness(meeting, db)
+
     return None

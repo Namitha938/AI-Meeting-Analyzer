@@ -136,9 +136,15 @@ def test_auth_admin_dependency_rbac(db_session):
 # 2. MEETING UPLOAD & CRUD TESTS
 # =============================================================================
 
-def test_meeting_create_and_file_validation(test_audio_file):
+def test_meeting_create_and_file_validation(test_audio_file, db_session):
     """Test creating a meeting, audio file upload, and format validation."""
-    token = create_access_token(data={"sub": "pipeline_test@meetora.ai"})
+    email = "pipeline_test@meetora.ai"
+    u = db_session.query(User).filter(User.email == email).first()
+    if not u:
+        u = User(email=email, hashed_password=get_password_hash("pass123"), full_name="Pipeline User", role="user")
+        db_session.add(u)
+        db_session.commit()
+    token = create_access_token(data={"sub": email})
 
     # 1. Invalid file format rejection
     invalid_file = ("bad_file.txt", b"Invalid text data", "text/plain")

@@ -10,7 +10,9 @@ import {
   complianceService,
   voiceprintService,
   MeetingItem,
-  ActionItemData
+  ActionItemData,
+  getMockMeetingDetail,
+  computeClientEffectiveness
 } from './api'
 import { AnalyticsCharts } from './components/AnalyticsCharts'
 import { LiveMeetingRecorderModal } from './components/LiveMeetingRecorderModal'
@@ -2153,27 +2155,10 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
         transcripts: transcripts && transcripts.length > 0 ? transcripts : detail.transcripts || []
       })
     } catch {
+      const mockD = getMockMeetingDetail(m.id || 1)
       setSelectedMeeting({
-        id: m.id || 1,
-        title: m.title,
-        summary: {
-          overview: "Team aligned on release milestones and prioritized mobile onboarding flows.",
-          key_takeaways: [
-            "Design handoff is scheduled for Friday.",
-            "Engineering will begin implementation next Monday.",
-            "Beta release target confirmed for August 12."
-          ]
-        },
-        action_items: [
-          { id: 1, title: 'Finalize onboarding flows', assignee: 'Sarah Kim', deadline: 'Friday', status: 'completed' },
-          { id: 2, title: 'Share API documentation', assignee: 'Marcus Lee', deadline: 'Monday', status: 'pending' },
-        ],
-        transcripts: [
-          { id: 1, speaker: 'Speaker 1', timestamp_str: '[00:00:00]', formatted_line: "[00:00:00] Speaker 1: Good morning everyone. Let's review our Q3 product roadmap and nail down launch milestones.", text: "Good morning everyone. Let's review our Q3 product roadmap and nail down launch milestones." },
-          { id: 2, speaker: 'Speaker 2', timestamp_str: '[00:00:15]', formatted_line: "[00:00:15] Speaker 2: The core backend API for the meeting analyzer is looking solid. Authentication and audio processing endpoints are tested.", text: "The core backend API for the meeting analyzer is looking solid. Authentication and audio processing endpoints are tested." },
-          { id: 3, speaker: 'Speaker 1', timestamp_str: '[00:00:32]', formatted_line: "[00:00:32] Speaker 1: Let's make sure the onboarding flow and mobile UX are ready for beta testing by Friday.", text: "Let's make sure the onboarding flow and mobile UX are ready for beta testing by Friday.", is_action_item: true },
-          { id: 4, speaker: 'Speaker 2', timestamp_str: '[00:00:48]', formatted_line: "[00:00:48] Speaker 2: I can own the final API documentation and share the versioned endpoints by Monday morning.", text: "I can own the final API documentation and share the versioned endpoints by Monday morning.", is_action_item: true }
-        ]
+        ...mockD,
+        title: m.title || mockD.title,
       })
     }
   }
@@ -4528,7 +4513,7 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
               >
                 📊 Chapters & Score
                 <span style={{ fontSize: '10px', background: meetingDetailTab === 'chapters_effectiveness' ? 'rgba(255,255,255,0.3)' : '#dcfce7', color: meetingDetailTab === 'chapters_effectiveness' ? '#fff' : '#15803d', padding: '1px 6px', borderRadius: '8px', fontWeight: 700 }}>
-                  88/100
+                  {selectedMeeting?.effectiveness_score != null ? `${selectedMeeting.effectiveness_score}/100` : '--'}
                 </span>
               </button>
             </div>
@@ -4814,67 +4799,123 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
             ) : meetingDetailTab === 'chapters_effectiveness' ? (
               <div>
                 {/* Effectiveness Score Card */}
-                <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '20px', padding: '20px', borderRadius: '14px', background: theme === 'dark' ? '#141124' : '#faf9fe', border: `1px solid ${theme === 'dark' ? '#332959' : '#e5e7eb'}`, marginBottom: '22px' }}>
-                  
-                  {/* Score Column */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', borderRight: `1px solid ${theme === 'dark' ? '#261f42' : '#eee'}`, paddingRight: '16px' }}>
-                    <div style={{ width: '88px', height: '88px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(16,185,129,0.3)', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '28px', fontWeight: 800, lineHeight: 1 }}>88</span>
-                      <span style={{ fontSize: '10px', textTransform: 'uppercase', opacity: 0.9 }}>Out of 100</span>
-                    </div>
-                    <b style={{ fontSize: '14px', color: '#10b981' }}>Highly Effective</b>
-                    <small style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>Meeting Effectiveness Score</small>
-                  </div>
+                {(() => {
+                  const score = selectedMeeting?.effectiveness_score != null ? selectedMeeting.effectiveness_score : null
+                  const pillars = selectedMeeting?.effectiveness_pillars || null
+                  const clarity = pillars?.clarity != null ? pillars.clarity : null
+                  const actionability = pillars?.actionability != null ? pillars.actionability : null
+                  const engagement = pillars?.engagement != null ? pillars.engagement : null
+                  const goalAlignment = pillars?.goal_alignment != null ? pillars.goal_alignment : null
 
-                  {/* Quality Breakdown Bars */}
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <b style={{ fontSize: '13px' }}>Meeting Quality Breakdown</b>
-                      <span style={{ fontSize: '11px', color: '#888' }}>Step 10: Dynamic NLP Health Index</span>
+                  let ratingText = '--'
+                  let ratingColor = '#888'
+                  let badgeGradient = 'linear-gradient(135deg, #6b7280, #4b5563)'
+                  let boxGlow = 'rgba(107, 114, 128, 0.2)'
+
+                  if (score != null) {
+                    if (score >= 85) {
+                      ratingText = 'Highly Effective'
+                      ratingColor = '#10b981'
+                      badgeGradient = 'linear-gradient(135deg, #10b981, #059669)'
+                      boxGlow = 'rgba(16, 185, 129, 0.3)'
+                    } else if (score >= 70) {
+                      ratingText = 'Effective'
+                      ratingColor = '#3b82f6'
+                      badgeGradient = 'linear-gradient(135deg, #3b82f6, #2563eb)'
+                      boxGlow = 'rgba(59, 130, 246, 0.3)'
+                    } else if (score >= 50) {
+                      ratingText = 'Moderately Productive'
+                      ratingColor = '#f59e0b'
+                      badgeGradient = 'linear-gradient(135deg, #f59e0b, #d97706)'
+                      boxGlow = 'rgba(245, 158, 11, 0.3)'
+                    } else {
+                      ratingText = 'Needs Attention'
+                      ratingColor = '#ef4444'
+                      badgeGradient = 'linear-gradient(135deg, #ef4444, #dc2626)'
+                      boxGlow = 'rgba(239, 68, 68, 0.3)'
+                    }
+                  }
+
+                  let recommendation = '💡 AI Recommendation: Review action item assignments and meeting structure to optimize outcome velocity.'
+                  if (score != null) {
+                    if (score >= 80) {
+                      recommendation = '💡 AI Recommendation: Excellent meeting dynamics! High goal alignment and clear ownership established.'
+                    } else if (clarity != null && clarity < 65) {
+                      recommendation = '💡 AI Recommendation: Frequent conversational filler words detected. Consider keeping utterances concise and focused.'
+                    } else if (actionability != null && actionability < 65) {
+                      recommendation = '💡 AI Recommendation: Action items lack explicit assignees or target dates. Ensure each deliverable has a designated owner.'
+                    } else if (engagement != null && engagement < 55) {
+                      recommendation = '💡 AI Recommendation: Speaking distribution was skewed towards a single participant. Encourage more balanced cross-functional input.'
+                    } else if (goalAlignment != null && goalAlignment < 55) {
+                      recommendation = '💡 AI Recommendation: Discussion diverged from the stated agenda/title. Consider keeping a tighter agenda structure.'
+                    } else {
+                      recommendation = '💡 AI Recommendation: Productive sync with room to tighten task deadlines and speaking balance.'
+                    }
+                  }
+
+                  return (
+                    <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '20px', padding: '20px', borderRadius: '14px', background: theme === 'dark' ? '#141124' : '#faf9fe', border: `1px solid ${theme === 'dark' ? '#332959' : '#e5e7eb'}`, marginBottom: '22px' }}>
+                      {/* Score Column */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', borderRight: `1px solid ${theme === 'dark' ? '#261f42' : '#eee'}`, paddingRight: '16px' }}>
+                        <div style={{ width: '88px', height: '88px', borderRadius: '50%', background: badgeGradient, color: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: `0 8px 24px ${boxGlow}`, marginBottom: '8px' }}>
+                          <span style={{ fontSize: '28px', fontWeight: 800, lineHeight: 1 }}>{score != null ? score : '--'}</span>
+                          <span style={{ fontSize: '10px', textTransform: 'uppercase', opacity: 0.9 }}>Out of 100</span>
+                        </div>
+                        <b style={{ fontSize: '14px', color: ratingColor }}>{ratingText}</b>
+                        <small style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>Meeting Effectiveness Score</small>
+                      </div>
+
+                      {/* Quality Breakdown Bars */}
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                          <b style={{ fontSize: '13px' }}>Meeting Quality Breakdown</b>
+                          <span style={{ fontSize: '11px', color: '#888' }}>4 Quality Pillars (0–100)</span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '12px' }}>
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
+                              <span>Clarity</span>
+                              <b>{clarity != null ? `${clarity} / 100` : '--'}</b>
+                            </div>
+                            <div style={{ height: '6px', borderRadius: '3px', background: '#e5e7eb', overflow: 'hidden' }}>
+                              <div style={{ width: `${clarity != null ? clarity : 0}%`, height: '100%', background: '#6d55d8' }}/>
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
+                              <span>Actionability</span>
+                              <b>{actionability != null ? `${actionability} / 100` : '--'}</b>
+                            </div>
+                            <div style={{ height: '6px', borderRadius: '3px', background: '#e5e7eb', overflow: 'hidden' }}>
+                              <div style={{ width: `${actionability != null ? actionability : 0}%`, height: '100%', background: '#10b981' }}/>
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
+                              <span>Engagement</span>
+                              <b>{engagement != null ? `${engagement} / 100` : '--'}</b>
+                            </div>
+                            <div style={{ height: '6px', borderRadius: '3px', background: '#e5e7eb', overflow: 'hidden' }}>
+                              <div style={{ width: `${engagement != null ? engagement : 0}%`, height: '100%', background: '#3b82f6' }}/>
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
+                              <span>Goal Alignment</span>
+                              <b>{goalAlignment != null ? `${goalAlignment} / 100` : '--'}</b>
+                            </div>
+                            <div style={{ height: '6px', borderRadius: '3px', background: '#e5e7eb', overflow: 'hidden' }}>
+                              <div style={{ width: `${goalAlignment != null ? goalAlignment : 0}%`, height: '100%', background: '#f59e0b' }}/>
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ background: theme === 'dark' ? '#1f1a35' : '#f0fdf4', border: '1px solid #bbf7d0', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', color: '#166534' }}>
+                          {recommendation}
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '12px' }}>
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
-                          <span>Action Item Clarity</span>
-                          <b>24 / 25</b>
-                        </div>
-                        <div style={{ height: '6px', borderRadius: '3px', background: '#e5e7eb', overflow: 'hidden' }}>
-                          <div style={{ width: '96%', height: '100%', background: '#6d55d8' }}/>
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
-                          <span>Speaking Balance</span>
-                          <b>22 / 25</b>
-                        </div>
-                        <div style={{ height: '6px', borderRadius: '3px', background: '#e5e7eb', overflow: 'hidden' }}>
-                          <div style={{ width: '88%', height: '100%', background: '#3b82f6' }}/>
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
-                          <span>Decision Velocity</span>
-                          <b>23 / 25</b>
-                        </div>
-                        <div style={{ height: '6px', borderRadius: '3px', background: '#e5e7eb', overflow: 'hidden' }}>
-                          <div style={{ width: '92%', height: '100%', background: '#10b981' }}/>
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
-                          <span>Team Sentiment</span>
-                          <b>19 / 25</b>
-                        </div>
-                        <div style={{ height: '6px', borderRadius: '3px', background: '#e5e7eb', overflow: 'hidden' }}>
-                          <div style={{ width: '76%', height: '100%', background: '#f59e0b' }}/>
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ background: theme === 'dark' ? '#1f1a35' : '#f0fdf4', border: '1px solid #bbf7d0', padding: '8px 12px', borderRadius: '8px', fontSize: '12px', color: '#166534' }}>
-                      💡 <b>AI Recommendation:</b> Excellent alignment on timeline deliverables. Speaker participation is well-balanced across engineering and product.
-                    </div>
-                  </div>
-                </div>
+                  )
+                })()}
 
                 {/* Topic Chapters Timeline */}
                 <div>

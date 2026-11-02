@@ -227,6 +227,8 @@ class MeetingResponse(BaseModel):
     primary_language: Optional[str] = "en"
     description: Optional[str] = None
     scheduled_at: Optional[datetime] = None
+    effectiveness_score: Optional[int] = None
+    effectiveness_pillars: Optional[Dict[str, Any]] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

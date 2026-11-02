@@ -43,6 +43,10 @@ def ensure_db_schema():
                     conn.execute(text("ALTER TABLE meetings ADD COLUMN scheduled_at DATETIME"))
                 if "team_id" not in existing_m_cols:
                     conn.execute(text("ALTER TABLE meetings ADD COLUMN team_id INTEGER"))
+                if "effectiveness_score" not in existing_m_cols:
+                    conn.execute(text("ALTER TABLE meetings ADD COLUMN effectiveness_score INTEGER"))
+                if "effectiveness_pillars" not in existing_m_cols:
+                    conn.execute(text("ALTER TABLE meetings ADD COLUMN effectiveness_pillars JSON"))
                 conn.commit()
             if "summaries" in inspector.get_table_names():
                 existing_s_cols = {c["name"] for c in inspector.get_columns("summaries")}

@@ -53,6 +53,13 @@ export interface User {
   }
 }
 
+export interface MeetingEffectivenessPillars {
+  clarity: number
+  actionability: number
+  engagement: number
+  goal_alignment: number
+}
+
 export interface MeetingItem {
   id: number
   user_id?: number
@@ -66,7 +73,11 @@ export interface MeetingItem {
   scheduled_at?: string
   updated_at?: string
   created_at: string
+  effectiveness_score?: number | null
+  effectiveness_pillars?: MeetingEffectivenessPillars | null
 }
+
+export type Meeting = MeetingItem
 
 export interface ActionItemData {
   id: number
@@ -584,15 +595,221 @@ export const authService = {
   },
 }
 
+export function computeClientEffectiveness(
+  segments: Array<{ speaker?: string; text?: string; start_time?: number; end_time?: number; start?: number; end?: number }>,
+  actionItems: Array<{ assignee?: string; deadline?: string; due_date?: string; owner?: string }>,
+  agendaOrTitle?: string
+): { score: number; pillars: MeetingEffectivenessPillars } | null {
+  if (!segments || segments.length === 0) return null
+  const valid = segments.filter(s => s && s.text && s.text.trim())
+  if (valid.length === 0) return null
+
+  // 1. Clarity
+  const fullText = valid.map(s => s.text).join(' ')
+  const words = fullText.toLowerCase().match(/\b[a-z0-9']+\b/g) || []
+  const totalWords = words.length
+  if (totalWords === 0) return null
+
+  const fillers = (fullText.match(/\b(um|uh|ah|er)\b/gi) || []).length +
+    (fullText.match(/\byou know\b/gi) || []).length +
+    (fullText.match(/\bi mean\b/gi) || []).length
+
+  const fillerRatio = fillers / totalWords
+  const fillerPenalty = Math.min(60, fillerRatio * 500)
+
+  const sentences = fullText.split(/[.!?]+/).filter(s => s.trim().length > 0)
+  const avgLen = totalWords / Math.max(sentences.length, 1)
+  const lenPenalty = Math.min(30, Math.abs(avgLen - 15) * 1.5)
+  const clarity = Math.round(Math.max(0, Math.min(100, 100 - fillerPenalty - lenPenalty)))
+
+  // 2. Actionability
+  const numActions = actionItems ? actionItems.length : 0
+  const coverageRatio = numActions / Math.max(valid.length, 1)
+  const coverageScore = Math.min(coverageRatio / 0.10, 1.0) * 50
+
+  let completeCount = 0
+  if (actionItems) {
+    for (const item of actionItems) {
+      const rawAssignee = (item.assignee || item.owner || '').trim().toLowerCase()
+      const rawDue = (item.deadline || item.due_date || '').trim().toLowerCase()
+      const hasAssignee = Boolean(rawAssignee && !['unassigned', 'unknown', 'none', 'tbd', ''].includes(rawAssignee))
+      const hasDue = Boolean(rawDue && !['none', 'no deadline', 'tbd', ''].includes(rawDue))
+      if (hasAssignee && hasDue) completeCount++
+    }
+  }
+  const completenessScore = numActions > 0 ? (completeCount / numActions) * 50 : 0
+  const actionability = Math.round(Math.max(0, Math.min(100, coverageScore + completenessScore)))
+
+  // 3. Engagement
+  const speakerDurations: Record<string, number> = {}
+  for (const s of valid) {
+    const spk = s.speaker || 'Unknown'
+    const start = typeof s.start === 'number' ? s.start : (s.start_time || 0)
+    const end = typeof s.end === 'number' ? s.end : (s.end_time || 0)
+    const dur = Math.max(0, end - start) || Math.max(1, (s.text || '').split(/\s+/).length)
+    speakerDurations[spk] = (speakerDurations[spk] || 0) + dur
+  }
+  const durations = Object.values(speakerDurations)
+  let engagement = 30
+  if (durations.length > 1) {
+    const n = durations.length
+    const total = durations.reduce((a, b) => a + b, 0)
+    if (total > 0) {
+      const sorted = [...durations].sort((a, b) => a - b)
+      let diffSum = 0
+      for (let i = 0; i < n; i++) {
+        diffSum += (2 * (i + 1) - n - 1) * sorted[i]
+      }
+      const rawGini = diffSum / (n * total)
+      const normGini = Math.min(1.0, rawGini * (n / (n - 1)))
+      engagement = Math.round(Math.max(0, Math.min(100, 100 * (1 - normGini))))
+    }
+  }
+
+  // 4. Goal Alignment
+  let goalAlignment = 50
+  if (agendaOrTitle && agendaOrTitle.trim()) {
+    const titleWords = new Set(agendaOrTitle.toLowerCase().match(/\b[a-z0-9]+\b/g) || [])
+    let matchCount = 0
+    for (const w of words) {
+      if (titleWords.has(w)) matchCount++
+    }
+    const overlapRatio = matchCount / Math.max(totalWords, 1)
+    const sim = Math.min(0.7, 0.1 + overlapRatio * 2.5)
+    goalAlignment = Math.round(Math.max(0, Math.min(100, ((sim - 0.1) / 0.6) * 100)))
+  }
+
+  const score = Math.round((clarity + actionability + engagement + goalAlignment) / 4)
+  return {
+    score,
+    pillars: {
+      clarity,
+      actionability,
+      engagement,
+      goal_alignment: goalAlignment,
+    },
+  }
+}
+
+export function getMockMeetingDetail(id: number) {
+  let title = 'Weekly product sync'
+  let transcripts: any[] = []
+  let actionItems: any[] = []
+
+  if (id === 12) {
+    title = 'Live Sync - Nov 2, 11:01 AM'
+    transcripts = [
+      { id: 1, speaker: 'Jordan Davis', start_time: 0.0, end_time: 4.0, text: 'Um, let us quickly check staging deployment.' },
+      { id: 2, speaker: 'Jordan Davis', start_time: 4.5, end_time: 9.0, text: 'We might need someone to check the backend.' },
+      { id: 3, speaker: 'Jordan Davis', start_time: 9.5, end_time: 14.0, text: 'Okay that is all for now.' }
+    ]
+    actionItems = [
+      { id: 1, title: 'Check staging deployment', assignee: 'Unassigned', deadline: '', status: 'pending' },
+      { id: 2, title: 'Check backend services', assignee: 'None', deadline: '', status: 'pending' }
+    ]
+  } else if (id === 2) {
+    title = 'Customer discovery — Acme'
+    transcripts = [
+      { id: 1, speaker: 'Jamie Miller', start_time: 0.0, end_time: 30.0, text: 'We conducted customer interviews with the Acme enterprise procurement leadership.' },
+      { id: 2, speaker: 'Jamie Miller', start_time: 31.0, end_time: 55.0, text: 'Their security team mandates single sign on and SOC2 compliance before pilot approval.' },
+      { id: 3, speaker: 'Alex Lin', start_time: 56.0, end_time: 59.0, text: 'Understood.' }
+    ]
+    actionItems = [
+      { id: 1, title: 'Send revised enterprise proposal', assignee: 'Jordan Davis', deadline: 'Tomorrow', status: 'pending' },
+      { id: 2, title: 'Follow up with security questionnaire', assignee: 'Unassigned', deadline: '', status: 'pending' }
+    ]
+  } else if (id === 3) {
+    title = 'Q3 marketing planning'
+    transcripts = [
+      { id: 1, speaker: 'Devin Kane', start_time: 0.0, end_time: 18.0, text: 'Our product marketing roadmap for Q3 centers on the developer launch campaign.' },
+      { id: 2, speaker: 'Rachel Scott', start_time: 19.0, end_time: 38.0, text: 'I am finalizing the campaign creative brief and coordinating with external agencies.' },
+      { id: 3, speaker: 'Marcus Lee', start_time: 39.0, end_time: 55.0, text: 'Engineering will provide interactive code playgrounds to support the blog announcements.' }
+    ]
+    actionItems = [
+      { id: 1, title: 'Review campaign brief', assignee: 'Rachel Scott', deadline: 'Jun 28', status: 'pending' },
+      { id: 2, title: 'Prepare launch slide deck', assignee: 'Devin Kane', deadline: 'Jul 2', status: 'pending' }
+    ]
+  } else if (id === 4) {
+    title = 'Design critique'
+    transcripts = [
+      { id: 1, speaker: 'Noah Price', start_time: 0.0, end_time: 16.0, text: 'Um, you know, we should uh check the padding, I mean, the mobile card looks a bit dense.' },
+      { id: 2, speaker: 'Sarah Kim', start_time: 17.0, end_time: 34.0, text: 'Yeah, uh, I agree. We can adjust the spacing tokens in Figma by tomorrow.' }
+    ]
+    actionItems = [
+      { id: 1, title: 'Update spacing tokens in Figma', assignee: 'Sarah Kim', deadline: 'Tomorrow', status: 'pending' }
+    ]
+  } else {
+    // Default meeting 1
+    title = 'Weekly product sync'
+    transcripts = [
+      { id: 1, speaker: 'Sarah Kim', start_time: 0.0, end_time: 12.5, text: "Let's make sure the onboarding flow is ready for the beta group by Friday.", is_action_item: true },
+      { id: 2, speaker: 'Marcus Lee', start_time: 13.0, end_time: 29.0, text: "I can own the API documentation and share the final version by Monday.", is_action_item: true },
+      { id: 3, speaker: 'Jordan Davis', start_time: 30.0, end_time: 44.0, text: "Great alignment. Let us keep the velocity steady across both deliverables." }
+    ]
+    actionItems = [
+      { id: 1, title: 'Finalize onboarding flows', assignee: 'Sarah Kim', deadline: 'Friday', status: 'completed' },
+      { id: 2, title: 'Share API documentation', assignee: 'Marcus Lee', deadline: 'Monday', status: 'pending' }
+    ]
+  }
+
+  const computed = computeClientEffectiveness(transcripts, actionItems, title)
+
+  return {
+    id,
+    title,
+    summary: {
+      overview: `Executive recap for ${title}. Team aligned on deliverables and next steps.`,
+      key_takeaways: [
+        'Core discussion items resolved with team consensus.',
+        'Deliverables and milestone schedules confirmed.'
+      ]
+    },
+    transcripts,
+    action_items: actionItems,
+    effectiveness_score: computed ? computed.score : 70,
+    effectiveness_pillars: computed ? computed.pillars : { clarity: 80, actionability: 70, engagement: 70, goal_alignment: 60 }
+  }
+}
+
 export const meetingService = {
   async getMeetings(): Promise<MeetingItem[]> {
-    const res = await api.get('/meetings')
-    return res.data
+    try {
+      const res = await api.get('/meetings')
+      return res.data
+    } catch {
+      return [1, 2, 3, 4, 12].map(id => {
+        const d = getMockMeetingDetail(id)
+        return {
+          id: d.id,
+          title: d.title,
+          duration_seconds: 1800,
+          status: 'completed',
+          participants: ['Sarah Kim', 'Marcus Lee', 'Jordan Davis'],
+          tags: ['Product'],
+          color: 'violet',
+          created_at: new Date().toISOString(),
+          effectiveness_score: d.effectiveness_score,
+          effectiveness_pillars: d.effectiveness_pillars
+        }
+      })
+    }
   },
 
   async getMeetingDetail(id: number) {
-    const res = await api.get(`/meetings/${id}`)
-    return res.data
+    try {
+      const res = await api.get(`/meetings/${id}`)
+      const data = res.data
+      if (data && data.effectiveness_score == null && data.transcripts && data.transcripts.length > 0) {
+        const computed = computeClientEffectiveness(data.transcripts, data.action_items, data.description || data.title)
+        if (computed) {
+          data.effectiveness_score = computed.score
+          data.effectiveness_pillars = computed.pillars
+        }
+      }
+      return data
+    } catch {
+      return getMockMeetingDetail(id)
+    }
   },
 
   async getMeetingStatus(id: number) {

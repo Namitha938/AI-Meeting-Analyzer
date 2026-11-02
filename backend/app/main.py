@@ -150,6 +150,27 @@ def seed_initial_demo_data():
                     speaking_time_distribution={"Sarah Kim": 45, "Marcus Lee": 35, "Jordan Davis": 20},
                 ))
 
+                # Compute effectiveness dynamically
+                try:
+                    from app.ml.effectiveness import compute_effectiveness
+                    demo_segs = [
+                        {"speaker": "Sarah Kim", "start_time": 0.0, "end_time": 12.5, "text": "Let's make sure the onboarding flow is ready for the beta group by Friday."},
+                        {"speaker": "Marcus Lee", "start_time": 13.0, "end_time": 29.0, "text": "I can own the API documentation and share the final version by Monday."}
+                    ]
+                    demo_acts = [
+                        {"assignee": a[1], "due_date": a[2]} for a in actions
+                    ]
+                    eff_res = compute_effectiveness(
+                        segments=demo_segs,
+                        action_items=demo_acts,
+                        agenda_text=sm["title"],
+                    )
+                    if eff_res:
+                        m.effectiveness_score = eff_res["score"]
+                        m.effectiveness_pillars = eff_res["pillars"]
+                except Exception as seed_eff_err:
+                    logger.warning(f"Error computing seed effectiveness: {seed_eff_err}")
+
                 db.commit()
             logger.info("Seeding completed successfully.")
     except Exception as e:

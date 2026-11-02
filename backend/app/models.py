@@ -46,6 +46,8 @@ class Meeting(Base):
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     description = Column(Text, nullable=True)
     scheduled_at = Column(DateTime, nullable=True)
+    effectiveness_score = Column(Integer, nullable=True)
+    effectiveness_pillars = Column(JSON, nullable=True)
 
     owner = relationship("User", back_populates="meetings")
     transcripts = relationship("Transcript", back_populates="meeting", cascade="all, delete-orphan")

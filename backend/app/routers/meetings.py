@@ -3,7 +3,7 @@ import shutil
 import subprocess
 import logging
 import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
@@ -33,6 +33,33 @@ from app.speech_to_text import format_timestamp
 logger = logging.getLogger("meetora.meetings")
 
 router = APIRouter(prefix="/meetings", tags=["Meetings"])
+
+def recompute_and_save_meeting_effectiveness(meeting: Meeting, db: Session) -> Optional[Dict[str, Any]]:
+    """Recomputes effectiveness score and pillars for a meeting and commits to DB."""
+    try:
+        from app.ml.effectiveness import compute_effectiveness
+        segments = [
+            {"speaker": t.speaker, "start_time": t.start_time, "end_time": t.end_time, "text": t.text}
+            for t in meeting.transcripts
+        ]
+        actions = [
+            {"assignee": a.assignee, "due_date": a.deadline or getattr(a, "due_date", None)}
+            for a in meeting.action_items
+        ]
+        eff = compute_effectiveness(
+            segments=segments,
+            action_items=actions,
+            agenda_text=meeting.description or meeting.title,
+        )
+        if eff:
+            meeting.effectiveness_score = eff["score"]
+            meeting.effectiveness_pillars = eff["pillars"]
+            db.commit()
+            db.refresh(meeting)
+            return eff
+    except Exception as e:
+        logger.warning(f"Failed to recompute meeting effectiveness for meeting {meeting.id}: {e}")
+    return None
 
 def convert_audio_if_possible(source_path: str) -> str:
     """
@@ -173,6 +200,8 @@ def get_meeting_detail(
         raise HTTPException(status_code=404, detail="Meeting not found")
     if meeting.user_id != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to access this meeting")
+    if meeting.effectiveness_score is None and meeting.transcripts:
+        recompute_and_save_meeting_effectiveness(meeting, db)
     return meeting
 
 @router.get("/{meeting_id}/status", response_model=MeetingStatusResponse)
@@ -380,6 +409,8 @@ def update_meeting(
         meeting.description = payload.description.strip()
 
     meeting.updated_at = datetime.datetime.utcnow()
+    if payload.title is not None or payload.description is not None:
+        recompute_and_save_meeting_effectiveness(meeting, db)
     db.commit()
     db.refresh(meeting)
     return meeting
@@ -541,6 +572,8 @@ def update_transcript_line(
         db.commit()
         db.refresh(line)
 
+    recompute_and_save_meeting_effectiveness(meeting, db)
+
     ts_str = format_seconds_to_ts(line.start_time)
     return {
         "id": line.id,
@@ -595,6 +628,9 @@ def rename_speaker(
     from app.diarization import rename_speaker_in_meeting
     try:
         res = rename_speaker_in_meeting(meeting_id, req.old_name, req.new_name, db)
+        meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+        if meeting:
+            recompute_and_save_meeting_effectiveness(meeting, db)
         return res
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

@@ -259,8 +259,21 @@ def run_meeting_pipeline_sync(meeting_id: int):
             raise RuntimeError(f"Step 12 Summary & Sentiment Stage Failed: {sum_err}") from sum_err
 
         # =========================================================================
-        # Stage 6: Completed
+        # Stage 6: Completed & Effectiveness Scoring
         # =========================================================================
+        try:
+            from app.ml.effectiveness import compute_effectiveness
+            eff_result = compute_effectiveness(
+                segments=merged_transcripts,
+                action_items=actions_data,
+                agenda_text=meeting.description or meeting.title,
+            )
+            if eff_result:
+                meeting.effectiveness_score = eff_result["score"]
+                meeting.effectiveness_pillars = eff_result["pillars"]
+        except Exception as eff_err:
+            logger.warning(f"Error computing meeting effectiveness: {eff_err}")
+
         final_duration = 300  # Default 5-minute meeting length
         if merged_transcripts:
             final_duration = int(max(t["end_time"] for t in merged_transcripts))
