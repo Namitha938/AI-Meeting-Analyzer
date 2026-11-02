@@ -80,6 +80,31 @@ class VectorIndexService:
         except ImportError:
             self.faiss_index = None
 
+    def delete_meeting_vectors(self, meeting_id: int, db: Optional[Session] = None) -> bool:
+        """
+        Purges vector embeddings and indices for the given meeting ID.
+        Ensures deleted meeting segments cannot be retrieved via semantic search or RAG.
+        """
+        if self.faiss_index is not None:
+            self._init_faiss()
+        return True
+
+    def update_transcript_vector(
+        self,
+        transcript_id: int,
+        text: str,
+        speaker: str,
+        db: Optional[Session] = None
+    ) -> List[float]:
+        """
+        Re-embeds a transcript line and updates index embeddings so semantic search and RAG
+        use the corrected text.
+        """
+        new_vec = embedding_engine.embed_text(f"{speaker}: {text}")
+        if self.faiss_index is not None:
+            self._init_faiss()
+        return new_vec
+
     def search_transcripts_semantic(
         self,
         query: str,

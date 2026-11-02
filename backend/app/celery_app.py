@@ -221,15 +221,19 @@ def run_meeting_pipeline_sync(meeting_id: int):
                 decisions=decisions_data,
             )
 
-            db.query(Summary).filter(Summary.meeting_id == meeting.id).delete()
-            summary_rec = Summary(
-                meeting_id=meeting.id,
-                overview=summary_res["overview"],
-                key_takeaways=summary_res["key_takeaways"],
-                next_steps=summary_res["next_steps"],
-                model_version=summary_res.get("model_version", "hierarchical-bart-flan-v2"),
-            )
-            db.add(summary_rec)
+            existing_summary = db.query(Summary).filter(Summary.meeting_id == meeting.id).first()
+            if existing_summary and getattr(existing_summary, "edited_by_user", False):
+                logger.info(f"Summary for meeting {meeting.id} has human edits; preserving human edits during pipeline re-run.")
+            else:
+                db.query(Summary).filter(Summary.meeting_id == meeting.id).delete()
+                summary_rec = Summary(
+                    meeting_id=meeting.id,
+                    overview=summary_res["overview"],
+                    key_takeaways=summary_res["key_takeaways"],
+                    next_steps=summary_res["next_steps"],
+                    model_version=summary_res.get("model_version", "hierarchical-bart-flan-v2"),
+                )
+                db.add(summary_rec)
 
             analytics_res = compute_full_analytics(
                 transcripts=merged_transcripts,

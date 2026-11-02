@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.config import settings
-from app.database import engine, Base, SessionLocal
+from app.database import engine, Base, SessionLocal, ensure_db_schema
 from app.models import User, Meeting, Transcript, Summary, ActionItem, Decision, MeetingAnalytics
 from app.auth import get_password_hash
 from app.routers.auth import router as auth_router
@@ -14,6 +14,9 @@ from app.routers.search import router as search_router
 from app.routers.export import router as export_router
 from app.routers.calendar import router as calendar_router
 from app.routers.admin import router as admin_router
+from app.routers.integrations import router as integrations_router
+from app.routers.compliance import router as compliance_router
+from app.routers.teams import router as teams_router, notifications_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("meetora")
@@ -159,6 +162,7 @@ def seed_initial_demo_data():
 async def lifespan(app: FastAPI):
     # Create DB tables
     Base.metadata.create_all(bind=engine)
+    ensure_db_schema()
     seed_initial_demo_data()
     yield
 
@@ -194,8 +198,12 @@ app.include_router(search_router, prefix=settings.API_PREFIX)
 app.include_router(export_router, prefix=settings.API_PREFIX)
 app.include_router(calendar_router, prefix=settings.API_PREFIX)
 app.include_router(admin_router, prefix=settings.API_PREFIX)
+app.include_router(integrations_router, prefix=settings.API_PREFIX)
+app.include_router(compliance_router, prefix=settings.API_PREFIX)
+app.include_router(teams_router, prefix=settings.API_PREFIX)
+app.include_router(notifications_router, prefix=settings.API_PREFIX)
 
-# Also mount /auth and /meetings directly at root so calls to /auth/login or /meetings work seamlessly
+# Also mount routers directly at root so calls without /api work seamlessly
 app.include_router(auth_router)
 app.include_router(meetings_router)
 app.include_router(action_items_router)
@@ -203,7 +211,10 @@ app.include_router(search_router)
 app.include_router(export_router)
 app.include_router(calendar_router)
 app.include_router(admin_router)
-app.include_router(calendar_router)
+app.include_router(integrations_router)
+app.include_router(compliance_router)
+app.include_router(teams_router)
+app.include_router(notifications_router)
 
 @app.get("/health", tags=["Health"])
 @app.get("/", tags=["Health"])

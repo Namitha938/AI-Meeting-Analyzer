@@ -50,6 +50,7 @@ def update_action_item(
     if has_text_change or has_assignee_change or has_deadline_change:
         correction = HumanCorrection(
             user_id=current_user.id,
+            meeting_id=item.meeting_id,
             action_item_id=item.id,
             original_text=item.title,
             corrected_text=update_data.get("title", item.title),
@@ -98,6 +99,7 @@ def review_and_approve_action_item(
     # Log human verification
     correction = HumanCorrection(
         user_id=current_user.id,
+        meeting_id=item.meeting_id,
         action_item_id=item.id,
         original_text=item.title,
         corrected_text=item.title,

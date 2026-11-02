@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Float, JSON
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Float, JSON, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -19,6 +19,9 @@ class User(Base):
     two_factor_enabled = Column(Boolean, default=False)
     two_factor_secret = Column(String(64), nullable=True)
     backup_codes = Column(JSON, default=list)
+    voiceprint_enrolled = Column(Boolean, default=False)
+    voiceprint_sample_path = Column(String(500), nullable=True)
+    voiceprint_metrics = Column(JSON, default=dict)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     meetings = relationship("Meeting", back_populates="owner", cascade="all, delete-orphan")
@@ -41,6 +44,8 @@ class Meeting(Base):
     primary_language = Column(String(20), default="en")
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    description = Column(Text, nullable=True)
+    scheduled_at = Column(DateTime, nullable=True)
 
     owner = relationship("User", back_populates="meetings")
     transcripts = relationship("Transcript", back_populates="meeting", cascade="all, delete-orphan")
@@ -49,6 +54,9 @@ class Meeting(Base):
     decisions = relationship("Decision", back_populates="meeting", cascade="all, delete-orphan")
     comments = relationship("Comment", back_populates="meeting", cascade="all, delete-orphan")
     analytics = relationship("MeetingAnalytics", back_populates="meeting", uselist=False, cascade="all, delete-orphan")
+    shares = relationship("MeetingShare", back_populates="meeting", cascade="all, delete-orphan")
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+    team = relationship("Team", back_populates="meetings")
 
 class Transcript(Base):
     __tablename__ = "transcripts"
@@ -77,9 +85,24 @@ class Summary(Base):
     key_takeaways = Column(JSON, default=list)  # ["point 1", "point 2"]
     next_steps = Column(Text, nullable=True)
     model_version = Column(String(50), default="bart-summarizer-v1.8")
+    edited_by_user = Column(Boolean, default=False)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    updated_by = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     meeting = relationship("Meeting", back_populates="summary")
+
+class MeetingShare(Base):
+    __tablename__ = "meeting_shares"
+
+    id = Column(Integer, primary_key=True, index=True)
+    meeting_id = Column(Integer, ForeignKey("meetings.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    can_edit = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    meeting = relationship("Meeting", back_populates="shares")
+    user = relationship("User")
 
 class ActionItem(Base):
     __tablename__ = "action_items"
@@ -143,6 +166,7 @@ class HumanCorrection(Base):
     __tablename__ = "human_corrections"
 
     id = Column(Integer, primary_key=True, index=True)
+    meeting_id = Column(Integer, nullable=True)  # Detached (set to NULL) upon meeting deletion to preserve dataset
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     action_item_id = Column(Integer, nullable=True)
     original_text = Column(Text, nullable=False)
@@ -166,3 +190,108 @@ class ModelRegistry(Base):
     description = Column(String(255), nullable=True)
     metrics = Column(JSON, default=dict)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+class WebhookIntegration(Base):
+    __tablename__ = "webhook_integrations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    provider = Column(String(50), default="slack")  # slack, teams, notion, custom
+    name = Column(String(100), nullable=False)
+    webhook_url = Column(String(500), nullable=False)
+    is_active = Column(Boolean, default=True)
+    events = Column(JSON, default=lambda: ["meeting.completed", "action_item.created"])
+    secret_token = Column(String(100), nullable=True)
+    last_triggered_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+class TrackedKeyword(Base):
+    __tablename__ = "tracked_keywords"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    keyword = Column(String(100), nullable=False, index=True)
+    category = Column(String(50), default="Risk")  # Risk, Commercial, Security, Product, Decision
+    color = Column(String(20), default="orange")
+    alert_enabled = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    user_email = Column(String(255), nullable=False)
+    action = Column(String(100), nullable=False)  # AUTH_LOGIN, 2FA_ENABLE, MEETING_RECORD, EXPORT_PDF, GDPR_EXPORT, ROLE_CHANGE
+    resource = Column(String(100), nullable=True)
+    ip_address = Column(String(50), default="127.0.0.1")
+    status = Column(String(20), default="SUCCESS")  # SUCCESS, FAILED
+    severity = Column(String(20), default="INFO")  # INFO, WARNING, CRITICAL
+    details = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+class Team(Base):
+    __tablename__ = "teams"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(60), nullable=False)
+    color = Column(String(50), default="violet")
+    description = Column(Text, nullable=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("owner_id", "name", name="uq_team_owner_name"),
+    )
+
+    owner = relationship("User", foreign_keys=[owner_id])
+    members = relationship("TeamMember", back_populates="team", cascade="all, delete-orphan")
+    invites = relationship("TeamInvite", back_populates="team", cascade="all, delete-orphan")
+    meetings = relationship("Meeting", back_populates="team")
+
+class TeamMember(Base):
+    __tablename__ = "team_members"
+
+    id = Column(Integer, primary_key=True, index=True)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    role = Column(String(20), default="member", nullable=False)  # owner, admin, member, viewer
+    joined_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("team_id", "user_id", name="uq_team_user"),
+    )
+
+    team = relationship("Team", back_populates="members")
+    user = relationship("User")
+
+class TeamInvite(Base):
+    __tablename__ = "team_invites"
+
+    id = Column(Integer, primary_key=True, index=True)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
+    email = Column(String(255), nullable=False)
+    role = Column(String(20), default="member", nullable=False)  # admin, member, viewer
+    token = Column(String(100), unique=True, nullable=False, index=True)
+    invited_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False)
+    accepted_at = Column(DateTime, nullable=True)
+    revoked_at = Column(DateTime, nullable=True)
+
+    team = relationship("Team", back_populates="invites")
+    invited_by = relationship("User", foreign_keys=[invited_by_id])
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    title = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
+    type = Column(String(50), default="team")
+    read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User")
