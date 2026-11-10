@@ -51,5 +51,8 @@ jobs:
           python -m spacy download en_core_web_sm
 
       - name: Run Pytest Suite
+        env:
+          PYTHONPATH: backend
+          DATABASE_URL: sqlite:///./ci_test.db
         run: |
           python -m pytest backend/tests/test_effectiveness.py backend/tests/test_calendar_export_admin.py backend/tests/test_seek_resolver.py -v

@@ -312,25 +312,11 @@ def run_meeting_pipeline_sync(meeting_id: int):
                 db.add(notif)
             db.commit()
 
-            # Dispatch email if SMTP configured
-            smtp_host = getattr(settings, "SMTP_HOST", None)
-            if smtp_host and getattr(settings, "SMTP_USER", None):
-                import smtplib
-                from email.mime.text import MIMEText
-                sender = getattr(settings, "SMTP_FROM", getattr(settings, "SMTP_USER"))
-                owner = meeting.owner
-                if owner and owner.email:
-                    email_body = f"Hello {owner.full_name or 'there'},\n\nYour meeting '{meeting.title}' has been successfully analyzed by Meetora.\nView the full summary, action items, and effectiveness score inside Meetora."
-                    msg = MIMEText(email_body)
-                    msg["Subject"] = f"Meetora Analysis Ready: {meeting.title}"
-                    msg["From"] = sender
-                    msg["To"] = owner.email
-                    port = getattr(settings, "SMTP_PORT", 587)
-                    with smtplib.SMTP(smtp_host, port, timeout=5) as server:
-                        if getattr(settings, "SMTP_TLS", True):
-                            server.starttls()
-                        server.login(settings.SMTP_USER, getattr(settings, "SMTP_PASSWORD", ""))
-                        server.send_message(msg)
+            owner = meeting.owner
+            if owner and owner.email:
+                from app.email_sender import send_smtp_email
+                email_body = f"Hello {owner.full_name or 'there'},\n\nYour meeting '{meeting.title}' has been successfully analyzed by Meetora.\nView the full summary, action items, and effectiveness score inside Meetora."
+                send_smtp_email([owner.email], f"Meetora Analysis Ready: {meeting.title}", email_body)
         except Exception as notif_err:
             logger.warning(f"Attendee notification warning: {notif_err}")
         logger.info(f"Successfully processed meeting {meeting_id} through all Steps 8-12!")

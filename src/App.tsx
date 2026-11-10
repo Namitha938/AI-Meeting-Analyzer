@@ -100,6 +100,20 @@ import { TeamMembersModal } from './components/TeamMembersModal'
 
 import { LiveMeetingRoom } from './components/LiveMeetingRoom'
 
+import { MeetingAnalyticsView } from './components/MeetingAnalyticsView'
+
+import { MeetingAgendaManager } from './components/MeetingAgendaManager'
+
+import { ExternalBotModal } from './components/ExternalBotModal'
+
+import { MeetingHighlightReels } from './components/MeetingHighlightReels'
+
+import { TaskSyncModal } from './components/TaskSyncModal'
+
+import { WebhookAutomationManager } from './components/WebhookAutomationManager'
+
+import { TeamHealthDashboard } from './components/TeamHealthDashboard'
+
 interface LiveMeetingErrorBoundaryProps {
   children: ReactNode
   onReset: () => void
@@ -2552,6 +2566,8 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
 
   const [showRecorderModal, setShowRecorderModal] = useState<boolean>(false)
 
+  const [showExternalBotModal, setShowExternalBotModal] = useState<boolean>(false)
+
   const [meetingToDelete, setMeetingToDelete] = useState<any | null>(null)
 
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false)
@@ -2659,6 +2675,10 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
   const [editingTranscriptText, setEditingTranscriptText] = useState<string>('')
 
   const [isSavingTranscript, setIsSavingTranscript] = useState<boolean>(false)
+
+  const [transcriptSearchFilter, setTranscriptSearchFilter] = useState<string>('')
+
+  const [transcriptSpeakerFilter, setTranscriptSpeakerFilter] = useState<string>('All')
 
   const [meetingTagFilter, setMeetingTagFilter] = useState<string>('All')
 
@@ -2786,7 +2806,11 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
 
   // 7 Core Features States: RAG, Confidence, HITL, Multilingual, Chapters
 
-  const [meetingDetailTab, setMeetingDetailTab] = useState<'summary' | 'transcript' | 'rag_chat' | 'chapters_effectiveness' | 'analytics'>('summary')
+  const [meetingDetailTab, setMeetingDetailTab] = useState<'summary' | 'transcript' | 'rag_chat' | 'chapters_effectiveness' | 'analytics' | 'analytics_sentiment' | 'agenda_tracking' | 'highlight_reels'>('summary')
+
+  const [taskToSync, setTaskToSync] = useState<any | null>(null)
+
+  const [showTaskSyncModal, setShowTaskSyncModal] = useState<boolean>(false)
 
   const [ragQuery, setRagQuery] = useState('')
 
@@ -6394,6 +6418,24 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
 
           <button className="button small" onClick={() => setShowCreateMeetingModal(true)}><Icon name="plus" size={17}/> Create meeting</button>
 
+          <button
+            type="button"
+            className="button small btn-anim"
+            onClick={() => setShowExternalBotModal(true)}
+            title="Dispatch Meetora AI Notetaker bot to Google Meet, Zoom, or Teams call"
+            style={{
+              background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+              boxShadow: '0 4px 14px rgba(124, 58, 237, 0.35)',
+              color: '#fff',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <span>🤖</span>
+            <span>Dispatch Bot</span>
+          </button>
+
         </div>
 
       </header>
@@ -8090,6 +8132,11 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
 
             </div>
 
+            {/* Team Health, Burnout Prevention & Meeting Cost Coaching */}
+            <div style={{ marginBottom: '28px' }}>
+              <TeamHealthDashboard theme={theme} />
+            </div>
+
             {/* Teams Switcher Tabs with Role-Aware Management Menu */}
 
             {(() => {
@@ -9402,7 +9449,13 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
 
         {dashView === 'integrations' && (
 
-          <IntegrationsHubView theme={theme} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+
+            <IntegrationsHubView theme={theme} />
+
+            <WebhookAutomationManager theme={theme} />
+
+          </div>
 
         )}
 
@@ -10527,6 +10580,48 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
 
               </button>
 
+              <button
+
+                type="button"
+
+                onClick={() => setMeetingDetailTab('analytics_sentiment')}
+
+                style={{ padding: '7px 15px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: '1px solid #0284c7', background: meetingDetailTab === 'analytics_sentiment' ? '#0284c7' : 'transparent', color: meetingDetailTab === 'analytics_sentiment' ? '#fff' : 'inherit', display: 'flex', alignItems: 'center', gap: '6px' }}
+
+              >
+
+                📈 Talk-Time & Sentiment
+
+              </button>
+
+              <button
+
+                type="button"
+
+                onClick={() => setMeetingDetailTab('agenda_tracking')}
+
+                style={{ padding: '7px 15px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: '1px solid #d97706', background: meetingDetailTab === 'agenda_tracking' ? '#d97706' : 'transparent', color: meetingDetailTab === 'agenda_tracking' ? '#fff' : 'inherit', display: 'flex', alignItems: 'center', gap: '6px' }}
+
+              >
+
+                📋 Agenda & Checklist
+
+              </button>
+
+              <button
+
+                type="button"
+
+                onClick={() => setMeetingDetailTab('highlight_reels')}
+
+                style={{ padding: '7px 15px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: '1px solid #7c3aed', background: meetingDetailTab === 'highlight_reels' ? '#7c3aed' : 'transparent', color: meetingDetailTab === 'highlight_reels' ? '#fff' : 'inherit', display: 'flex', alignItems: 'center', gap: '6px' }}
+
+              >
+
+                🎬 Highlight Reels
+
+              </button>
+
             </div>
 
             {meetingDetailTab === 'summary' ? (
@@ -10953,10 +11048,40 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
 
                             </div>
 
-                            <div style={{ color: '#888', fontSize: '11px', marginTop: '4px' }}>
-
-                              Owner: {a.assignee || 'Unassigned'} • Due: {a.deadline || 'TBD'}
-
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px', gap: '8px', flexWrap: 'wrap' }}>
+                              <div style={{ color: '#888', fontSize: '11px' }}>
+                                Owner: {a.assignee || 'Unassigned'} • Due: {a.deadline || 'TBD'}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setTaskToSync({
+                                    title: a.title,
+                                    assignee: a.assignee,
+                                    deadline: a.deadline,
+                                    context_quote: a.context_quote || a.quote,
+                                    meeting_title: selectedMeeting.title
+                                  })
+                                  setShowTaskSyncModal(true)
+                                }}
+                                style={{
+                                  background: 'transparent',
+                                  border: '1px solid #7c3aed',
+                                  color: '#7c3aed',
+                                  borderRadius: '6px',
+                                  padding: '2px 8px',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                                title="Sync this action item to GitHub Issues or Asana"
+                              >
+                                🐙 Push to Issue Tracker
+                              </button>
                             </div>
 
                           </div>
@@ -11588,6 +11713,27 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
 
               </div>
 
+            ) : meetingDetailTab === 'analytics_sentiment' ? (
+
+              <MeetingAnalyticsView meeting={selectedMeeting} theme={theme} />
+
+            ) : meetingDetailTab === 'agenda_tracking' ? (
+
+              <MeetingAgendaManager meeting={selectedMeeting} theme={theme} />
+
+            ) : meetingDetailTab === 'highlight_reels' ? (
+
+              <MeetingHighlightReels
+                meeting={selectedMeeting}
+                theme={theme}
+                onSeekPlayback={(sec: number) => {
+                  if (mediaElementRef.current) {
+                    mediaElementRef.current.currentTime = sec
+                    mediaElementRef.current.play().catch(() => {})
+                  }
+                }}
+              />
+
             ) : (
 
               <div>
@@ -11708,11 +11854,62 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
 
                 )}
 
+                {/* Transcript Interactive Filter & Speed Toolbar */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '12px', flexWrap: 'wrap', background: theme === 'dark' ? '#1c1730' : '#f8f7fb', padding: '8px 12px', borderRadius: '8px', border: `1px solid ${theme === 'dark' ? '#2e264f' : '#e8e5ec'}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '220px' }}>
+                    <input
+                      type="text"
+                      placeholder="🔍 Search spoken words in transcript..."
+                      value={transcriptSearchFilter}
+                      onChange={(e) => setTranscriptSearchFilter(e.target.value)}
+                      style={{ flex: 1, padding: '5px 10px', borderRadius: '6px', fontSize: '12px', border: `1px solid ${theme === 'dark' ? '#383256' : '#ccc'}`, background: theme === 'dark' ? '#120f20' : '#fff', color: 'inherit' }}
+                    />
+                    {transcriptSearchFilter && (
+                      <button
+                        type="button"
+                        onClick={() => setTranscriptSearchFilter('')}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', color: '#888' }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px' }}>
+                    <span style={{ color: '#888', fontWeight: 600 }}>Speed:</span>
+                    {[0.75, 1, 1.25, 1.5, 2].map((spd) => (
+                      <button
+                        key={spd}
+                        type="button"
+                        onClick={() => {
+                          if (mediaElementRef.current) {
+                            mediaElementRef.current.playbackRate = spd
+                          }
+                        }}
+                        style={{
+                          padding: '2px 7px',
+                          borderRadius: '4px',
+                          border: 'none',
+                          background: theme === 'dark' ? '#2b2349' : '#e8e5ec',
+                          color: 'inherit',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {spd}x
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Transcript Items List */}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '380px', overflowY: 'auto', paddingRight: '6px' }}>
 
-                  {(selectedMeeting.transcripts || []).map((t: any, idx: number) => {
+                  {(selectedMeeting.transcripts || [])
+                    .filter((t: any) => !transcriptSearchFilter.trim() || (t.text && t.text.toLowerCase().includes(transcriptSearchFilter.toLowerCase().trim())) || (t.speaker && t.speaker.toLowerCase().includes(transcriptSearchFilter.toLowerCase().trim())))
+                    .map((t: any, idx: number) => {
 
                     const ts = t.timestamp_str || (t.start_time !== undefined ? `[${String(Math.floor(t.start_time / 60)).padStart(2, '0')}:${String(Math.floor(t.start_time % 60)).padStart(2, '0')}]` : '[00:00:00]')
 
@@ -13926,6 +14123,37 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
 
         />
 
+        {/* External AI Notetaker Bot Dispatch Modal */}
+        <ExternalBotModal
+          isOpen={showExternalBotModal}
+          onClose={() => setShowExternalBotModal(false)}
+          onBotDispatched={(botData) => {
+            const newM: any = {
+              id: Date.now(),
+              title: botData.title,
+              created_at: botData.dispatched_at,
+              duration_sec: 1800,
+              participants: ['Meetora AI Notetaker', 'External Attendees'],
+              status: 'recording',
+              tags: ['External', botData.platform],
+              bot_status: 'joined',
+              meeting_url: botData.url,
+            }
+            setMeetingsList((prev) => [newM, ...prev])
+            setHitlToast(`🤖 Meetora Notetaker successfully joined ${botData.platform}!`)
+          }}
+          theme={theme}
+        />
+
+        {/* Action Item Push to GitHub / Asana Modal */}
+        <TaskSyncModal
+          isOpen={showTaskSyncModal}
+          onClose={() => setShowTaskSyncModal(false)}
+          task={taskToSync}
+          theme={theme}
+          onSuccess={(msg) => setHitlToast(msg)}
+        />
+
         {/* Delete Confirmation Modal */}
 
         <DeleteMeetingModal
@@ -13958,6 +14186,8 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
 
         />
 
+
+
         {/* Edit Meeting Details Modal */}
 
         <EditMeetingModal
@@ -13980,6 +14210,8 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
 
         />
 
+
+
         {/* Edit Team Settings Modal */}
 
         <EditTeamModal
@@ -13996,6 +14228,8 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
 
         />
 
+
+
         {/* Delete Team Modal */}
 
         <DeleteTeamModal
@@ -14011,6 +14245,8 @@ function Dashboard({ go, theme, toggleTheme }: { go: (p: Page) => void; theme: '
           theme={theme}
 
         />
+
+
 
         {/* Manage Team Members & Invites Modal */}
 

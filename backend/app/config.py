@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 
 # Ensure .env is loaded from both working directory and backend directory
-load_dotenv()
-load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
+load_dotenv(override=True)
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"), override=True)
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Meetora AI Meeting Analyzer API"

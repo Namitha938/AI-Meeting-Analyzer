@@ -8,6 +8,7 @@ from email.mime.multipart import MIMEMultipart
 from typing import List, Dict, Any, Optional
 from app.config import settings
 from app.models import ActionItem, Meeting, User
+from app.email_sender import send_smtp_email
 
 logger = logging.getLogger("meetora.calendar")
 
@@ -156,28 +157,8 @@ Best regards,
 Meetora Task Automation
 """
 
-        if settings.SMTP_USER and settings.SMTP_PASSWORD:
-            try:
-                msg = MIMEMultipart()
-                msg["From"] = settings.EMAILS_FROM_EMAIL
-                msg["To"] = to_email
-                msg["Subject"] = subject
-                msg.attach(MIMEText(body_text, "plain"))
-
-                with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-                    server.starttls()
-                    server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-                    server.send_message(msg)
-
-                logger.info(f"Dispatched deadline reminder email to {to_email}")
-                return True
-            except Exception as e:
-                logger.error(f"Failed to send SMTP email to {to_email}: {e}")
-                return False
-        else:
-            # Simulated email delivery log for development
-            logger.info(f"[SIMULATED EMAIL REMINDER] Sent to: {to_email} | Tasks: {len(tasks)}")
-            return True
+        ok, msg = send_smtp_email([to_email], subject, body_text)
+        return ok
 
     @classmethod
     def scan_and_send_due_reminders(cls, db: Any) -> Dict[str, Any]:

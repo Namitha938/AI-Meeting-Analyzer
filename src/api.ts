@@ -3408,7 +3408,7 @@ export const exportService = {
   },
 
   async sendFollowUpEmail(meetingId: number, data: { recipients: string[]; subject: string; body: string }) {
-    const res = await api.post(`/export/${meetingId}/send-email`, data)
+    const res = await api.post(`/export/${meetingId}/send-email`, data, { timeout: 30000 })
     return res.data
   },
 

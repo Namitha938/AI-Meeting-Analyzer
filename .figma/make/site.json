@@ -1,0 +1,10 @@
+{
+  "description": "Analyze meeting recordings and transcripts to create summaries, identify decisions and action items, and help teams manage follow-ups efficiently.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

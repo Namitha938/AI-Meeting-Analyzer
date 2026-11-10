@@ -5,8 +5,10 @@ from datetime import datetime
 from app.database import get_db
 from app.models import User, Meeting, AuditLog
 from app.schemas import EmailDraftResponse, EmailSendRequest, EmailSendResponse
-from app.auth import get_current_user
+from app.auth import get_current_user, get_optional_current_user
 from app.document_generator import SimpleDocxBuilder, SimplePdfBuilder
+from app.email_sender import send_smtp_email
+from typing import Optional
 
 router = APIRouter(prefix="/export", tags=["Export & Sharing"])
 
@@ -257,37 +259,46 @@ def generate_follow_up_email(
 def send_follow_up_email(
     meeting_id: int,
     payload: EmailSendRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
     db: Session = Depends(get_db)
 ):
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+    # If meeting record does not yet exist in DB, create or allow live meeting invite
+    meeting_title = meeting.title if meeting else f"Live Meeting #{meeting_id}"
 
     recipients = [r.strip() for r in payload.recipients if r.strip()]
     if not recipients:
         raise HTTPException(status_code=400, detail="At least one recipient email address is required")
 
+    # Attempt real SMTP delivery via Gmail/SMTP provider
+    smtp_ok, delivery_msg = send_smtp_email(
+        recipients=recipients,
+        subject=payload.subject,
+        body=payload.body,
+    )
+
     audit = AuditLog(
-        user_id=current_user.id,
-        user_email=current_user.email,
+        user_id=current_user.id if current_user else 0,
+        user_email=current_user.email if current_user else "live_meeting_host",
         action="MEETING_EMAIL_SENT",
         resource=f"meeting:{meeting_id}",
-        status="SUCCESS",
+        status="SUCCESS" if smtp_ok else "NOTICE",
         severity="INFO",
         details={
             "recipients_count": len(recipients),
             "recipients": recipients,
             "subject": payload.subject,
-            "meeting_title": meeting.title
+            "meeting_title": meeting_title,
+            "delivery_status": delivery_msg,
+            "smtp_delivered": smtp_ok
         }
     )
     db.add(audit)
     db.commit()
 
     return EmailSendResponse(
-        success=True,
-        meeting_id=meeting.id,
+        success=smtp_ok,
+        meeting_id=meeting_id,
         sent_to=recipients,
-        message=f"Follow-up recap successfully delivered to {len(recipients)} recipient(s)."
+        message=delivery_msg
     )

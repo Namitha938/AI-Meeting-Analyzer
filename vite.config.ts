@@ -4,7 +4,19 @@ import tailwindcss from '@tailwindcss/vite'
 import fs from 'node:fs'
 import path from 'node:path'
 
-import siteConfiguration from './.figma/make/site.json' with { type: 'json' }
+let siteConfiguration: any = {
+  description: 'Analyze meeting recordings and transcripts to create summaries, identify decisions and action items, and help teams manage follow-ups efficiently.',
+  robots: { index: false },
+  accessibility: { addBypassLinks: false, ignoreReducedMotion: false },
+}
+try {
+  const siteConfigPath = path.resolve(process.cwd(), './.figma/make/site.json')
+  if (fs.existsSync(siteConfigPath)) {
+    siteConfiguration = JSON.parse(fs.readFileSync(siteConfigPath, 'utf-8'))
+  }
+} catch {
+  // Use default configuration
+}
 
 
 // Vite config — https://vitejs.dev/config/
