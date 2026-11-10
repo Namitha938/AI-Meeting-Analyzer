@@ -12,6 +12,7 @@ from app.models import User
 from app.schemas import TokenData
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_PREFIX}/auth/login")
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl=f"{settings.API_PREFIX}/auth/login", auto_error=False)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     try:
@@ -60,6 +61,24 @@ async def get_current_user(
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user account")
     return user
+
+async def get_optional_current_user(
+    token: Optional[str] = Depends(oauth2_scheme_optional),
+    db: Session = Depends(get_db)
+) -> Optional[User]:
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        email: str = payload.get("sub")
+        if not email:
+            return None
+        user = db.query(User).filter(User.email == email).first()
+        if user and user.is_active:
+            return user
+    except Exception:
+        return None
+    return None
 
 async def get_current_admin(
     current_user: User = Depends(get_current_user)

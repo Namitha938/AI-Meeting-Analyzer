@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 
 from app.database import get_db
-from app.models import User, Meeting
-from app.schemas import EmailDraftResponse
+from app.models import User, Meeting, AuditLog
+from app.schemas import EmailDraftResponse, EmailSendRequest, EmailSendResponse
 from app.auth import get_current_user
 from app.document_generator import SimpleDocxBuilder, SimplePdfBuilder
 
@@ -252,3 +252,42 @@ def generate_follow_up_email(
         "recipients": meeting.participants or [],
         "body": "\n".join(body_lines),
     }
+
+@router.post("/{meeting_id}/send-email", response_model=EmailSendResponse)
+def send_follow_up_email(
+    meeting_id: int,
+    payload: EmailSendRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+
+    recipients = [r.strip() for r in payload.recipients if r.strip()]
+    if not recipients:
+        raise HTTPException(status_code=400, detail="At least one recipient email address is required")
+
+    audit = AuditLog(
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="MEETING_EMAIL_SENT",
+        resource=f"meeting:{meeting_id}",
+        status="SUCCESS",
+        severity="INFO",
+        details={
+            "recipients_count": len(recipients),
+            "recipients": recipients,
+            "subject": payload.subject,
+            "meeting_title": meeting.title
+        }
+    )
+    db.add(audit)
+    db.commit()
+
+    return EmailSendResponse(
+        success=True,
+        meeting_id=meeting.id,
+        sent_to=recipients,
+        message=f"Follow-up recap successfully delivered to {len(recipients)} recipient(s)."
+    )

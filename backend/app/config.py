@@ -1,6 +1,11 @@
 import os
 from typing import List
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
+
+# Ensure .env is loaded from both working directory and backend directory
+load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Meetora AI Meeting Analyzer API"
@@ -57,6 +62,23 @@ class Settings(BaseSettings):
     GOOGLE_CALENDAR_CLIENT_ID: str = os.getenv("GOOGLE_CALENDAR_CLIENT_ID", "")
     GOOGLE_CALENDAR_CLIENT_SECRET: str = os.getenv("GOOGLE_CALENDAR_CLIENT_SECRET", "")
     GOOGLE_CALENDAR_REDIRECT_URI: str = os.getenv("GOOGLE_CALENDAR_REDIRECT_URI", "http://localhost:8000/api/calendar/callback")
+
+    # LiveKit WebRTC & Egress
+    LIVEKIT_URL: str = os.getenv("LIVEKIT_URL", "")
+    LIVEKIT_API_KEY: str = os.getenv("LIVEKIT_API_KEY", "")
+    LIVEKIT_API_SECRET: str = os.getenv("LIVEKIT_API_SECRET", "")
+    LIVEKIT_MAX_PARTICIPANTS: int = int(os.getenv("LIVEKIT_MAX_PARTICIPANTS", "8"))
+    MAX_ROOM_PARTICIPANTS: int = int(os.getenv("MAX_ROOM_PARTICIPANTS", os.getenv("LIVEKIT_MAX_PARTICIPANTS", "8")))
+    LIVEKIT_JOIN_RATE_LIMIT_PER_MINUTE: int = int(os.getenv("LIVEKIT_JOIN_RATE_LIMIT_PER_MINUTE", "20"))
+    RECORDING_RETENTION_DAYS: int = int(os.getenv("RECORDING_RETENTION_DAYS", "30"))
+    BOT_PROVIDER: str = os.getenv("BOT_PROVIDER", "mock")
+    BOT_NAME: str = os.getenv("BOT_NAME", "Meetora Notetaker (recording)")
+    RECALL_API_KEY: str = os.getenv("RECALL_API_KEY", "")
+    RECALL_WEBHOOK_SECRET: str = os.getenv("RECALL_WEBHOOK_SECRET", "")
+    RECALL_BASE_URL: str = os.getenv("RECALL_BASE_URL", "https://api.recall.ai/api/v1")
+    VEXA_API_KEY: str = os.getenv("VEXA_API_KEY", "")
+    VEXA_WEBHOOK_SECRET: str = os.getenv("VEXA_WEBHOOK_SECRET", "")
+    BOT_JOIN_RATE_LIMIT_PER_MINUTE: int = int(os.getenv("BOT_JOIN_RATE_LIMIT_PER_MINUTE", "10"))
 
     SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", 587))

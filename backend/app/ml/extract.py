@@ -306,6 +306,8 @@ def extract_actions(
                 meeting_users=meeting_users,
                 confidence=conf,
             )
+            action["start_time_sec"] = item.get("start_time") if item.get("start_time") is not None else item.get("start")
+            action["source_segment_id"] = item.get("id")
             actions.append(action)
 
     return actions

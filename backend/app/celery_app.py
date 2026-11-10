@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+import datetime
 from celery import Celery
 from app.config import settings
 
@@ -192,6 +193,8 @@ def run_meeting_pipeline_sync(meeting_id: int):
                     priority=act.get("priority", "medium"),
                     confidence_score=act.get("confidence_score", 0.92),
                     needs_review=act.get("confidence_score", 0.92) < 0.80,
+                    start_time_sec=act.get("start_time_sec"),
+                    source_segment_id=act.get("source_segment_id"),
                 )
                 db.add(ai)
 
@@ -202,6 +205,8 @@ def run_meeting_pipeline_sync(meeting_id: int):
                     decision_text=dec["decision_text"],
                     category=dec.get("category", "General"),
                     rationale=dec.get("rationale", "Meeting consensus outcome"),
+                    start_time_sec=dec.get("start_time_sec"),
+                    source_segment_id=dec.get("source_segment_id"),
                 )
                 db.add(dc)
             db.commit()
@@ -280,7 +285,54 @@ def run_meeting_pipeline_sync(meeting_id: int):
 
         meeting.duration_seconds = final_duration
         meeting.status = "completed"
+        if meeting.is_live:
+            meeting.live_status = "completed"
         db.commit()
+
+        # Step Phase 2: Send notifications and emails to all attendees upon processing completion
+        try:
+            from app.models import Notification, LiveParticipant
+            attendee_ids = set()
+            if meeting.user_id:
+                attendee_ids.add(meeting.user_id)
+            if meeting.host_id:
+                attendee_ids.add(meeting.host_id)
+            for part in (meeting.live_participants or []):
+                if part.user_id:
+                    attendee_ids.add(part.user_id)
+
+            for uid in attendee_ids:
+                notif = Notification(
+                    user_id=uid,
+                    title="Meeting Analysis Ready",
+                    message=f"The recording and summary for '{meeting.title}' is now available.",
+                    type="meeting",
+                    read=False
+                )
+                db.add(notif)
+            db.commit()
+
+            # Dispatch email if SMTP configured
+            smtp_host = getattr(settings, "SMTP_HOST", None)
+            if smtp_host and getattr(settings, "SMTP_USER", None):
+                import smtplib
+                from email.mime.text import MIMEText
+                sender = getattr(settings, "SMTP_FROM", getattr(settings, "SMTP_USER"))
+                owner = meeting.owner
+                if owner and owner.email:
+                    email_body = f"Hello {owner.full_name or 'there'},\n\nYour meeting '{meeting.title}' has been successfully analyzed by Meetora.\nView the full summary, action items, and effectiveness score inside Meetora."
+                    msg = MIMEText(email_body)
+                    msg["Subject"] = f"Meetora Analysis Ready: {meeting.title}"
+                    msg["From"] = sender
+                    msg["To"] = owner.email
+                    port = getattr(settings, "SMTP_PORT", 587)
+                    with smtplib.SMTP(smtp_host, port, timeout=5) as server:
+                        if getattr(settings, "SMTP_TLS", True):
+                            server.starttls()
+                        server.login(settings.SMTP_USER, getattr(settings, "SMTP_PASSWORD", ""))
+                        server.send_message(msg)
+        except Exception as notif_err:
+            logger.warning(f"Attendee notification warning: {notif_err}")
         logger.info(f"Successfully processed meeting {meeting_id} through all Steps 8-12!")
 
         return {
@@ -320,3 +372,127 @@ def run_meeting_pipeline_sync(meeting_id: int):
 def process_meeting(meeting_id: int):
     """Celery background worker entry point for process_meeting."""
     return run_meeting_pipeline_sync(meeting_id)
+
+
+@celery_app.task(name="process_meeting_audio_task")
+def process_meeting_audio_task(meeting_id: int, audio_path: str = None):
+    """Celery worker task invoked when recording is ready."""
+    return run_meeting_pipeline_sync(meeting_id)
+
+
+
+@celery_app.task(name="cleanup_expired_recordings_task")
+def cleanup_expired_recordings_task(retention_days: int = None):
+    """
+    Retention: auto-delete video/audio recording media files older than RECORDING_RETENTION_DAYS (default 30)
+    while strictly keeping transcript, summary, and action items intact.
+    Writes an audit log entry for the purge.
+    """
+    days = retention_days if retention_days is not None else getattr(settings, "RECORDING_RETENTION_DAYS", 30)
+    cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=days)
+    from app.database import SessionLocal
+    db = SessionLocal()
+    purged_count = 0
+    try:
+        from app.models import Recording, AuditLog
+        expired_recs = db.query(Recording).filter(
+            Recording.created_at < cutoff,
+            Recording.status != "expired"
+        ).all()
+        for rec in expired_recs:
+            if rec.storage_key and os.path.exists(rec.storage_key):
+                try:
+                    os.remove(rec.storage_key)
+                except Exception as e:
+                    logger.warning(f"Retention file removal error: {e}")
+            rec.status = "expired"
+            purged_count += 1
+            db.add(AuditLog(
+                user_id=None,
+                user_email="system@meetora.ai",
+                action="RECORDING_RETENTION_PURGE",
+                resource=f"meeting:{rec.meeting_id}",
+                status="SUCCESS",
+                severity="INFO",
+                details={"recording_id": rec.id, "retention_days": days}
+            ))
+        db.commit()
+        logger.info(f"Retention purge task finished: cleaned {purged_count} expired recordings.")
+        return {"purged_count": purged_count, "retention_days": days}
+    finally:
+        db.close()
+
+
+@celery_app.task(name="trigger_meeting_bot_task")
+def trigger_meeting_bot_task(meeting_id: int):
+    """
+    Celery task to automatically dispatch the AI notetaker bot to an external meeting.
+    Runs 1 minute before scheduled start time.
+    """
+    from app.database import SessionLocal
+    from app.models import Meeting, AuditLog
+    from app.bot_providers import get_bot_provider, validate_meeting_url
+    import asyncio
+
+    db = SessionLocal()
+    try:
+        meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+        if not meeting:
+            logger.error(f"Meeting {meeting_id} not found for trigger_meeting_bot_task")
+            return {"status": "error", "message": f"Meeting {meeting_id} not found"}
+
+        if meeting.source != "external_link" or not meeting.auto_join or not meeting.consent_confirmed:
+            logger.info(f"Bot auto-join skipped for meeting {meeting_id}: conditions not met")
+            return {"status": "skipped", "message": "Auto-join disabled or consent missing"}
+
+        if meeting.bot_status in ["recording", "completed", "cancelled", "removed"]:
+            logger.info(f"Bot auto-join skipped for meeting {meeting_id}: status={meeting.bot_status}")
+            return {"status": "skipped", "message": f"Already in status {meeting.bot_status}"}
+
+        valid, plat, err = validate_meeting_url(meeting.meeting_link or "")
+        if not valid:
+            meeting.bot_status = "failed"
+            meeting.bot_error = err
+            db.commit()
+            return {"status": "failed", "error": err}
+
+        provider = get_bot_provider(meeting.bot_provider)
+        try:
+            res = asyncio.run(provider.join(meeting.id, meeting.meeting_link, getattr(settings, "BOT_NAME", "Meetora Notetaker (recording)")))
+            meeting.bot_id = res.get("bot_id")
+            meeting.bot_status = res.get("status", "joining")
+            meeting.bot_error = None
+            db.add(AuditLog(
+                user_id=meeting.user_id,
+                user_email="bot@meetora.ai",
+                action="BOT_REQUESTED",
+                resource=f"meeting:{meeting_id}",
+                status="SUCCESS",
+                severity="INFO",
+                details={"bot_id": meeting.bot_id, "provider": meeting.bot_provider, "auto": True}
+            ))
+            db.commit()
+            return {"status": "dispatched", "bot_id": meeting.bot_id}
+        except Exception as e:
+            meeting.bot_status = "failed"
+            meeting.bot_error = str(e)
+            db.commit()
+            return {"status": "failed", "error": str(e)}
+    finally:
+        db.close()
+
+
+def schedule_meeting_bot(meeting_id: int, scheduled_at: datetime.datetime):
+    """
+    Schedules the bot trigger 1 minute before scheduled_at.
+    """
+    try:
+        now = datetime.datetime.utcnow()
+        eta = scheduled_at - datetime.timedelta(minutes=1)
+        if eta < now:
+            trigger_meeting_bot_task.apply_async(args=[meeting_id])
+        else:
+            trigger_meeting_bot_task.apply_async(args=[meeting_id], eta=eta)
+        logger.info(f"Scheduled meeting bot for meeting {meeting_id} at {eta}")
+    except Exception as e:
+        logger.warning(f"Could not enqueue scheduled meeting bot: {e}")

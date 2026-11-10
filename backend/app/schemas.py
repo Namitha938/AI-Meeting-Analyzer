@@ -131,6 +131,8 @@ class ActionItemResponse(BaseModel):
     priority: str
     confidence_score: Optional[float] = 0.92
     needs_review: Optional[bool] = False
+    start_time_sec: Optional[float] = None
+    source_segment_id: Optional[int] = None
     model_version: Optional[str] = "distilbert-v2.4"
     created_at: datetime
     updated_at: Optional[datetime] = None
@@ -143,6 +145,8 @@ class DecisionCreate(BaseModel):
     decision_text: str
     category: Optional[str] = "General"
     rationale: Optional[str] = None
+    start_time_sec: Optional[float] = None
+    source_segment_id: Optional[int] = None
 
 class DecisionResponse(BaseModel):
     id: int
@@ -212,6 +216,18 @@ class MeetingCreate(BaseModel):
     participants: Optional[List[str]] = []
     tags: Optional[List[str]] = []
     color: Optional[str] = "violet"
+    source: Optional[str] = "upload"  # live_room | external_link | upload
+    is_live: Optional[bool] = False
+    record_mode: Optional[str] = "audio_video"
+    passcode: Optional[str] = None
+    scheduled_at: Optional[datetime] = None
+    description: Optional[str] = None
+    team_id: Optional[int] = None
+    meeting_link: Optional[str] = None
+    platform: Optional[str] = None
+    auto_join: Optional[bool] = True
+    consent_confirmed: Optional[bool] = False
+    bot_provider: Optional[str] = "mock"
 
 class MeetingResponse(BaseModel):
     id: int
@@ -229,11 +245,164 @@ class MeetingResponse(BaseModel):
     scheduled_at: Optional[datetime] = None
     effectiveness_score: Optional[int] = None
     effectiveness_pillars: Optional[Dict[str, Any]] = None
+    source: Optional[str] = "upload"
+    is_live: Optional[bool] = False
+    room_name: Optional[str] = None
+    meeting_code: Optional[str] = None
+    has_passcode: Optional[bool] = False
+    locked: Optional[bool] = False
+    waiting_room_enabled: Optional[bool] = False
+    live_status: Optional[str] = "scheduled"
+    host_id: Optional[int] = None
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    record_mode: Optional[str] = "audio_video"
+    meeting_link: Optional[str] = None
+    platform: Optional[str] = None
+    auto_join: Optional[bool] = True
+    consent_confirmed: Optional[bool] = False
+    consent_confirmed_at: Optional[datetime] = None
+    bot_provider: Optional[str] = "mock"
+    bot_id: Optional[str] = None
+    bot_status: Optional[str] = "not_requested"
+    bot_error: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+class LiveParticipantResponse(BaseModel):
+    id: int
+    meeting_id: int
+    user_id: Optional[int] = None
+    display_name: str
+    role: Optional[str] = "participant"
+    status: Optional[str] = "admitted"
+    is_muted: Optional[bool] = False
+    video_disabled: Optional[bool] = False
+    joined_at: datetime
+    left_at: Optional[datetime] = None
+    consent_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class LiveJoinRequest(BaseModel):
+    display_name: str = Field(..., min_length=1, max_length=100)
+    consent: bool = Field(..., description="Must consent to recording and analysis")
+    passcode: Optional[str] = None
+
+class LiveJoinResponse(BaseModel):
+    token: str
+    livekit_url: str
+    room_name: str
+    participant_id: str
+    display_name: str
+    is_host: bool
+    status: Optional[str] = "admitted"
+    waiting_message: Optional[str] = None
+
+class ModerationActionRequest(BaseModel):
+    participant_id: Optional[int] = None
+
+class ModerationActionResponse(BaseModel):
+    success: bool
+    action: str
+    message: str
+    target_participant_id: Optional[int] = None
+
+class JoinByCodeRequest(BaseModel):
+    meeting_code: str = Field(..., min_length=3, max_length=50)
+    passcode: Optional[str] = None
+
+class JoinByCodeResponse(BaseModel):
+    meeting_id: int
+    title: str
+    meeting_code: str
+    requires_passcode: bool
+    is_live: bool
+    live_status: str
+
+class LiveChatMessageCreate(BaseModel):
+    message: str = Field(..., min_length=1)
+    is_private: Optional[bool] = False
+    recipient_id: Optional[int] = None
+
+class LiveChatMessageResponse(BaseModel):
+    id: int
+    meeting_id: int
+    sender_id: Optional[int] = None
+    sender_name: str
+    message: str
+    is_private: bool = False
+    recipient_id: Optional[int] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class LiveStatusResponse(BaseModel):
+    meeting_id: int
+    is_live: bool
+    live_status: str
+    room_name: Optional[str] = None
+    meeting_code: Optional[str] = None
+    has_passcode: bool = False
+    locked: bool = False
+    record_mode: str
+    host_id: Optional[int] = None
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    active_participants_count: int = 0
+    can_join: bool = False
+    is_host: bool = False
+
+
+
+class RecordingResponse(BaseModel):
+    id: int
+    meeting_id: int
+    kind: str
+    participant_id: Optional[str] = None
+    storage_key: Optional[str] = None
+    duration: Optional[float] = 0.0
+    size_bytes: Optional[int] = 0
+    status: str
+    egress_id: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class RecordingStartResponse(BaseModel):
+    status: str
+    recording: bool
+    egress_ids: List[str] = []
+    message: str
+
+class RecordingStopResponse(BaseModel):
+    status: str
+    recording: bool
+    message: str
+
+class PlaybackResponse(BaseModel):
+    playback_url: str
+    expires_at: datetime
+    kind: str
+    duration: Optional[float] = None
+
+class ChunkUploadResponse(BaseModel):
+    status: str
+    chunk_index: int
+    total_chunks: int
+    recording_id: Optional[int] = None
+    meeting_id: int
+
+class LiveEndResponse(BaseModel):
+    status: str
+    message: str
+    ended_at: datetime
 
 class MeetingUpdateRequest(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200)
@@ -275,6 +444,7 @@ class MeetingDetailResponse(MeetingResponse):
     transcripts: List[TranscriptItem] = []
     analytics: Optional[AnalyticsResponse] = None
     comments: List[CommentResponse] = []
+    chapters: Optional[List[Dict[str, Any]]] = []
 
 class BulkDeleteRequest(BaseModel):
     meeting_ids: List[int]
@@ -305,6 +475,17 @@ class EmailDraftResponse(BaseModel):
     subject: str
     recipients: List[str]
     body: str
+
+class EmailSendRequest(BaseModel):
+    recipients: List[str]
+    subject: str
+    body: str
+
+class EmailSendResponse(BaseModel):
+    success: bool
+    meeting_id: int
+    sent_to: List[str]
+    message: str
 
 
 # ==========================================
@@ -585,3 +766,41 @@ class NotificationResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class BotJoinRequest(BaseModel):
+    consent_confirmed: bool = True
+
+class BotStatusResponse(BaseModel):
+    meeting_id: int
+    bot_status: str
+    bot_id: Optional[str] = None
+    bot_error: Optional[str] = None
+    platform: Optional[str] = None
+    meeting_link: Optional[str] = None
+    auto_join: bool = True
+    consent_confirmed: bool = False
+    elapsed_seconds: Optional[int] = 0
+
+
+class LiveCaptionInput(BaseModel):
+    text: str = Field(..., min_length=1)
+    speaker: str = Field(default="Participant")
+    timestamp: Optional[float] = 0.0
+    is_final: Optional[bool] = True
+
+class DetectedActionItem(BaseModel):
+    id: Optional[int] = None
+    title: str
+    assignee: Optional[str] = None
+    deadline: Optional[str] = None
+    confidence_score: float = 0.88
+    context_quote: str
+    status: str = "suggested"
+    start_time_sec: Optional[float] = None
+    source_segment_id: Optional[int] = None
+
+class LiveCaptionResponse(BaseModel):
+    text: str
+    speaker: str
+    timestamp: float
+    detected_action_item: Optional[DetectedActionItem] = None

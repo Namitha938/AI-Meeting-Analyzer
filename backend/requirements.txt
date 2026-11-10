@@ -26,3 +26,4 @@ spacy>=3.7.0
 dateparser>=1.2.0
 scikit-learn>=1.4.0
 sentence-transformers>=2.6.0
+livekit-api>=1.2.0

@@ -268,10 +268,73 @@ Interactive Swagger documentation is available out of the box when running the b
 | :--- | :--- | :--- |
 | **Authentication** | `/api/v1/auth` | Login, Register, Refresh Token, 2FA setup/verify |
 | **Meetings** | `/api/v1/meetings` | Upload, transcribe, get details, edit, delete |
+| **Meeting Bot** | `/api/v1/meetings/{id}/bot/join` | Dispatch AI notetaker bot to external meeting link |
+| **Meeting Bot** | `/api/v1/meetings/{id}/bot/leave` | Command bot to leave meeting |
+| **Meeting Bot** | `/api/v1/meetings/{id}/bot/status` | Current bot status and recording duration |
+| **Meeting Bot Webhook**| `/api/v1/webhooks/meeting-bot` | Webhook receiver with signature verification |
 | **Teams** | `/api/v1/teams` | Create team, update details, invite member, delete |
 | **Action Items** | `/api/v1/action-items` | Fetch, create, update status, HITL corrections |
 | **Compliance** | `/api/v1/compliance` | Immutable audit trail, export bundle, GDPR purge |
 | **Integrations** | `/api/v1/integrations` | Slack/Zoom/Teams webhooks, keyword triggers |
+
+---
+
+## 🤖 External Meeting AI Notetaker Bot Setup (Phase 5)
+
+Meetora supports dispatching an autonomous AI notetaker bot to record and transcribe external meetings across Google Meet, Zoom, and Microsoft Teams.
+
+### 1. Environment Variables
+In `backend/.env`:
+```ini
+# Bot Provider: 'mock' for testing/offline, or 'recall' / 'vexa' for production
+BOT_PROVIDER=mock
+BOT_NAME="Meetora Notetaker (recording)"
+
+# Recall.ai Provider Configuration
+RECALL_API_KEY=your_recall_api_key_here
+RECALL_WEBHOOK_SECRET=your_recall_webhook_secret_here
+RECALL_BASE_URL=https://api.recall.ai/api/v1
+
+# Security & Retention
+RECORDING_RETENTION_DAYS=30
+BOT_JOIN_RATE_LIMIT_PER_MINUTE=10
+```
+
+### 2. Trying Against the Recall.ai Sandbox
+To test Meetora's AI notetaker bot against the live Recall.ai sandbox environment:
+1. Sign up for a developer account at [Recall.ai](https://www.recall.ai) and obtain an API key from your dashboard.
+2. In `backend/.env`, set:
+   ```ini
+   BOT_PROVIDER=recall
+   RECALL_API_KEY=<your_api_key_from_dashboard>
+   RECALL_WEBHOOK_SECRET=<your_webhook_signing_secret>
+   RECALL_BASE_URL=https://us-east-1.recall.ai/api/v1
+   ```
+3. Start your local webhook tunnel (e.g. `ngrok http 8000`) and configure the webhook URL in the Recall.ai dashboard to:
+   `https://<your-ngrok-subdomain>.ngrok-free.app/webhooks/meeting-bot`
+4. In Meetora, select **+ New Meeting** ➔ **External meeting link**, paste a Google Meet, Zoom, or Teams URL, confirm participant consent, and click **Schedule & Request Bot**.
+5. Recall will dispatch `Meetora Notetaker (recording)` to your meeting. Once admitted, it announces the recording in chat, records audio/video, and triggers Meetora's post-meeting analysis pipeline automatically upon call conclusion.
+
+### 3. Exposing Webhooks Locally
+For testing webhooks with third-party providers (e.g., Recall.ai) on your local development machine:
+
+#### Using ngrok:
+```bash
+ngrok http 8000
+```
+Configure your provider's webhook URL to: `https://<your-ngrok-subdomain>.ngrok-free.app/api/webhooks/meeting-bot?provider=recall`
+
+#### Using cloudflared:
+```bash
+cloudflared tunnel --url http://localhost:8000
+```
+Configure your provider's webhook URL to: `https://<your-tunnel>.trycloudflare.com/api/webhooks/meeting-bot?provider=recall`
+
+### 3. SSRF & Privacy Protection
+- **SSRF Allowlist**: Meeting URLs are strictly restricted to trusted domains (`meet.google.com`, `*.zoom.us`, `teams.microsoft.com`, `teams.live.com`). Requests targeting private networks, loopback addresses (`127.0.0.1`, `localhost`), or AWS metadata IP (`169.254.169.254`) are rejected with `400 Bad Request`.
+- **Explicit Consent**: Consent must be affirmatively confirmed before any recording bot can be dispatched.
+- **Private Storage & Retention**: Media files are stored in private storage (never public URLs) and automatically purged after `RECORDING_RETENTION_DAYS` while retaining transcript data and summaries.
+- **Provider Media Deletion**: Upon recording ingestion or meeting deletion, provider-side media is automatically purged.
 
 ---
 

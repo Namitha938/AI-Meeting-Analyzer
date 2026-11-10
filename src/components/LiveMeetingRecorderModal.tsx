@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { meetingService, MeetingItem } from '../api'
+import { useRecording } from '../context/RecordingContext'
 
 interface LiveMeetingRecorderModalProps {
   isOpen: boolean
@@ -14,6 +15,7 @@ export const LiveMeetingRecorderModal: React.FC<LiveMeetingRecorderModalProps> =
   onMeetingCreated,
   theme,
 }) => {
+  const { startRecordingSession, stopRecordingSession } = useRecording()
   const [recordState, setRecordState] = useState<'idle' | 'recording' | 'paused' | 'stopped'>('idle')
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
@@ -130,6 +132,17 @@ export const LiveMeetingRecorderModal: React.FC<LiveMeetingRecorderModalProps> =
       setRecordState('recording')
       setElapsedSeconds(0)
 
+      startRecordingSession({
+        source: 'recorder_modal',
+        title,
+        stopAndUpload: async () => {
+          await stopAndSaveDirectly()
+        },
+        stopMediaTracks: () => {
+          stopAllMedia()
+        },
+      })
+
       timerRef.current = setInterval(() => {
         setElapsedSeconds((prev) => prev + 1)
       }, 1000)
@@ -139,6 +152,33 @@ export const LiveMeetingRecorderModal: React.FC<LiveMeetingRecorderModalProps> =
       console.error('Microphone error:', err)
       setErrorMessage(err.message || 'Microphone access denied. Please grant permission in your browser settings.')
     }
+  }
+
+  const stopAndSaveDirectly = async () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      await new Promise<void>((resolve) => {
+        if (!mediaRecorderRef.current) return resolve()
+        mediaRecorderRef.current.onstop = () => resolve()
+        mediaRecorderRef.current.stop()
+      })
+    }
+    const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+    if (blob.size > 0) {
+      const file = new File([blob], `recorded_meeting_${Date.now()}.webm`, { type: 'audio/webm' })
+      const fd = new FormData()
+      fd.append('title', title)
+      fd.append('file', file)
+      fd.append('participants', participants)
+      fd.append('tags', tag)
+      fd.append('color', color)
+      try {
+        const created = await meetingService.uploadMeeting(fd)
+        onMeetingCreated(created)
+      } catch (e) {
+        console.warn('Auto upload fallback:', e)
+      }
+    }
+    handleClose(true)
   }
 
   const pauseRecording = () => {
@@ -194,7 +234,7 @@ export const LiveMeetingRecorderModal: React.FC<LiveMeetingRecorderModalProps> =
         })
       }
       onMeetingCreated(createdMeeting)
-      handleClose()
+      handleClose(true)
     } catch (err) {
       console.warn('API save fallback:', err)
       const mockCreated: MeetingItem = {
@@ -208,13 +248,26 @@ export const LiveMeetingRecorderModal: React.FC<LiveMeetingRecorderModalProps> =
         created_at: new Date().toISOString(),
       }
       onMeetingCreated(mockCreated)
-      handleClose()
+      handleClose(true)
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleClose = () => {
+  const handleClose = (force = false) => {
+    if (!force && (recordState === 'recording' || recordState === 'paused')) {
+      const confirmSave = window.confirm(
+        'A recording is currently in progress. Would you like to stop and upload what was captured?'
+      )
+      if (confirmSave) {
+        stopRecordingSession()
+        return
+      } else {
+        const confirmDiscard = window.confirm('Discard current recording?')
+        if (!confirmDiscard) return
+        stopRecordingSession()
+      }
+    }
     stopAllMedia()
     setRecordState('idle')
     setAudioUrl(null)

@@ -39,6 +39,8 @@ htmlcov/
 meetora.db
 backend/meetora.db
 *.db
+*.db-shm
+*.db-wal
 *.sqlite3
 
 # Uploads & Media

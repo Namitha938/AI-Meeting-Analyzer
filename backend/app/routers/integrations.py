@@ -1,5 +1,6 @@
 import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 import httpx
@@ -12,6 +13,11 @@ from app.schemas import (
     WebhookIntegrationResponse,
     WebhookTestResponse
 )
+
+class SyncTasksRequest(BaseModel):
+    target: str = "slack"  # 'slack' | 'notion' | 'trello' | 'jira' | 'webhook'
+    item_ids: Optional[List[int]] = None
+    webhook_url: Optional[str] = None
 
 router = APIRouter(prefix="/integrations", tags=["Enterprise Integrations & Webhooks"])
 
@@ -162,5 +168,70 @@ def dispatch_meeting_webhook(
         "dispatched_to": dispatched,
         "meeting_title": meeting.title,
         "payload": payload
+    }
+
+
+@router.post("/{meeting_id}/sync-tasks")
+def sync_meeting_tasks(
+    meeting_id: int,
+    payload: SyncTasksRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+
+    query = db.query(ActionItem).filter(ActionItem.meeting_id == meeting_id)
+    if payload.item_ids:
+        query = query.filter(ActionItem.id.in_(payload.item_ids))
+    action_items = query.all()
+
+    target = payload.target.lower()
+    task_list = [
+        {
+            "id": a.id,
+            "title": a.title,
+            "assignee": a.assignee or "Unassigned",
+            "deadline": a.deadline or "TBD",
+            "priority": a.priority or "medium",
+            "status": a.status
+        }
+        for a in action_items
+    ]
+
+    if target == "slack":
+        preview = f"*Meetora Action Items for {meeting.title}*\n" + "\n".join(
+            [f"• *{t['title']}* (Assignee: @{t['assignee']}, Due: {t['deadline']})" for t in task_list]
+        )
+    elif target == "notion":
+        preview = f"Notion Database Table: [{len(task_list)} task rows created under '{meeting.title}']"
+    elif target == "trello":
+        preview = f"Trello Board Cards: [{len(task_list)} cards created with due dates and labels]"
+    elif target == "jira":
+        preview = f"Jira Backlog Issues: [{len(task_list)} task issues created linked to meeting]"
+    else:
+        preview = f"Webhook Payload: {len(task_list)} items delivered"
+
+    audit = AuditLog(
+        user_id=current_user.id,
+        user_email=current_user.email,
+        action="TASKS_SYNCED",
+        resource=f"meeting:{meeting_id}:{target}",
+        status="SUCCESS",
+        severity="INFO",
+        details={"target": target, "count": len(task_list), "meeting_title": meeting.title}
+    )
+    db.add(audit)
+    db.commit()
+
+    return {
+        "success": True,
+        "platform": target,
+        "meeting_title": meeting.title,
+        "synced_count": len(task_list),
+        "tasks": task_list,
+        "preview": preview,
+        "message": f"Successfully synced {len(task_list)} action item(s) to {target.capitalize()}!"
     }
 

@@ -24,7 +24,7 @@ class User(Base):
     voiceprint_metrics = Column(JSON, default=dict)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-    meetings = relationship("Meeting", back_populates="owner", cascade="all, delete-orphan")
+    meetings = relationship("Meeting", foreign_keys="Meeting.user_id", back_populates="owner", cascade="all, delete-orphan")
     comments = relationship("Comment", back_populates="user", cascade="all, delete-orphan")
 
 class Meeting(Base):
@@ -48,8 +48,32 @@ class Meeting(Base):
     scheduled_at = Column(DateTime, nullable=True)
     effectiveness_score = Column(Integer, nullable=True)
     effectiveness_pillars = Column(JSON, nullable=True)
+    source = Column(String(50), default="upload", nullable=False)  # live_room | external_link | upload
+    is_live = Column(Boolean, default=False, nullable=False)
+    room_name = Column(String(100), nullable=True)
+    meeting_code = Column(String(50), unique=True, nullable=True, index=True)
+    passcode_hash = Column(String(255), nullable=True)
+    live_status = Column(String(50), default="scheduled", nullable=False)  # scheduled | live | recording | processing | completed | failed | cancelled
+    host_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    started_at = Column(DateTime, nullable=True)
+    ended_at = Column(DateTime, nullable=True)
+    record_mode = Column(String(50), default="audio_video", nullable=False)  # audio_only | audio_video
+    locked = Column(Boolean, default=False, nullable=False)
+    waiting_room_enabled = Column(Boolean, default=False, nullable=False)  # Require host admission
 
-    owner = relationship("User", back_populates="meetings")
+    # Phase 5: External Meeting Link & AI Notetaker Bot fields
+    meeting_link = Column(String(500), nullable=True)
+    platform = Column(String(50), nullable=True)  # google_meet | zoom | ms_teams | other
+    auto_join = Column(Boolean, default=True, nullable=False)
+    consent_confirmed = Column(Boolean, default=False, nullable=False)
+    consent_confirmed_at = Column(DateTime, nullable=True)
+    bot_provider = Column(String(50), default="mock", nullable=False)
+    bot_id = Column(String(100), nullable=True, index=True)
+    bot_status = Column(String(50), default="not_requested", nullable=False)  # not_requested | scheduled | joining | waiting_for_admission | recording | processing | completed | failed | cancelled | removed
+    bot_error = Column(Text, nullable=True)
+
+    owner = relationship("User", foreign_keys=[user_id], back_populates="meetings")
+    host = relationship("User", foreign_keys=[host_id])
     transcripts = relationship("Transcript", back_populates="meeting", cascade="all, delete-orphan")
     summary = relationship("Summary", back_populates="meeting", uselist=False, cascade="all, delete-orphan")
     action_items = relationship("ActionItem", back_populates="meeting", cascade="all, delete-orphan")
@@ -57,8 +81,15 @@ class Meeting(Base):
     comments = relationship("Comment", back_populates="meeting", cascade="all, delete-orphan")
     analytics = relationship("MeetingAnalytics", back_populates="meeting", uselist=False, cascade="all, delete-orphan")
     shares = relationship("MeetingShare", back_populates="meeting", cascade="all, delete-orphan")
+    live_participants = relationship("LiveParticipant", back_populates="meeting", cascade="all, delete-orphan")
+    chats = relationship("MeetingChat", back_populates="meeting", cascade="all, delete-orphan")
+    recordings = relationship("Recording", back_populates="meeting", cascade="all, delete-orphan")
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     team = relationship("Team", back_populates="meetings")
+
+    @property
+    def has_passcode(self) -> bool:
+        return bool(self.passcode_hash)
 
 class Transcript(Base):
     __tablename__ = "transcripts"
@@ -119,6 +150,8 @@ class ActionItem(Base):
     confidence_score = Column(Float, default=0.92)
     needs_review = Column(Boolean, default=False)
     model_version = Column(String(50), default="distilbert-v2.4")
+    start_time_sec = Column(Float, nullable=True)
+    source_segment_id = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
@@ -132,6 +165,8 @@ class Decision(Base):
     decision_text = Column(Text, nullable=False)
     category = Column(String(100), default="General")
     rationale = Column(Text, nullable=True)
+    start_time_sec = Column(Float, nullable=True)
+    source_segment_id = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     meeting = relationship("Meeting", back_populates="decisions")
@@ -297,3 +332,54 @@ class Notification(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     user = relationship("User")
+
+class LiveParticipant(Base):
+    __tablename__ = "live_participants"
+
+    id = Column(Integer, primary_key=True, index=True)
+    meeting_id = Column(Integer, ForeignKey("meetings.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    display_name = Column(String(150), nullable=False)
+    role = Column(String(20), default="participant", nullable=False)  # host | cohost | participant
+    status = Column(String(30), default="admitted", nullable=False)  # waiting | admitted | denied | removed
+    is_muted = Column(Boolean, default=False, nullable=False)
+    video_disabled = Column(Boolean, default=False, nullable=False)
+    joined_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+    left_at = Column(DateTime, nullable=True)
+    consent_at = Column(DateTime, nullable=True)
+
+    meeting = relationship("Meeting", back_populates="live_participants")
+    user = relationship("User")
+
+class MeetingChat(Base):
+    __tablename__ = "meeting_chats"
+
+    id = Column(Integer, primary_key=True, index=True)
+    meeting_id = Column(Integer, ForeignKey("meetings.id"), nullable=False, index=True)
+    sender_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    sender_name = Column(String(100), nullable=False)
+    message = Column(Text, nullable=False)
+    is_private = Column(Boolean, default=False, nullable=False)
+    recipient_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+
+    meeting = relationship("Meeting", back_populates="chats")
+    sender = relationship("User", foreign_keys=[sender_id])
+    recipient = relationship("User", foreign_keys=[recipient_id])
+
+
+class Recording(Base):
+    __tablename__ = "recordings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    meeting_id = Column(Integer, ForeignKey("meetings.id"), nullable=False, index=True)
+    kind = Column(String(50), default="composite_video", nullable=False)  # composite_video | composite_audio | participant_audio
+    participant_id = Column(String(100), nullable=True)
+    storage_key = Column(String(500), nullable=True)
+    duration = Column(Float, default=0.0)
+    size_bytes = Column(Integer, default=0)
+    status = Column(String(50), default="recording", nullable=False)  # recording | ready | failed
+    egress_id = Column(String(100), nullable=True, index=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+
+    meeting = relationship("Meeting", back_populates="recordings")

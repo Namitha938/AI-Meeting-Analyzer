@@ -10,8 +10,11 @@
     "format": "oxfmt"
   },
   "dependencies": {
+    "@livekit/components-react": "^2.9.24",
+    "@livekit/components-styles": "^1.2.0",
     "axios": "^1.21.0",
     "firebase": "^13.1.0",
+    "livekit-client": "^2.23.0",
     "nodemailer": "^10.2.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

@@ -1,5 +1,7 @@
 from typing import List, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import datetime, timedelta
+import urllib.parse
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -56,4 +58,75 @@ def trigger_deadline_reminders(
     """
     res = EmailReminderService.scan_and_send_due_reminders(db)
     return res
+
+
+@router.get("/meeting/{meeting_id}/google-url")
+def get_meeting_google_calendar_url(
+    meeting_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+
+    start_dt = meeting.scheduled_at or meeting.created_at or datetime.utcnow()
+    end_dt = start_dt + timedelta(minutes=60)
+    fmt = "%Y%m%dT%H%M%SZ"
+    dates_str = f"{start_dt.strftime(fmt)}/{end_dt.strftime(fmt)}"
+
+    details = f"Meetora Live Meeting: {meeting.title}\nJoin Link: http://localhost:8443/#live/{meeting.id}\nMeeting Code: {meeting.meeting_code or f'meet-{meeting.id}'}"
+    params = {
+        "action": "TEMPLATE",
+        "text": meeting.title,
+        "details": details,
+        "location": f"http://localhost:8443/#live/{meeting.id}",
+        "dates": dates_str
+    }
+    url = f"https://calendar.google.com/calendar/render?{urllib.parse.urlencode(params)}"
+    return {
+        "meeting_id": meeting.id,
+        "title": meeting.title,
+        "google_calendar_url": url
+    }
+
+
+@router.get("/meeting/{meeting_id}/ics")
+def download_meeting_ics(
+    meeting_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+
+    start_dt = meeting.scheduled_at or meeting.created_at or datetime.utcnow()
+    end_dt = start_dt + timedelta(minutes=60)
+    fmt = "%Y%m%dT%H%M%SZ"
+    now_str = datetime.utcnow().strftime(fmt)
+
+    ics_content = f"""BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Meetora AI//Meeting Analyzer//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:meetora-{meeting.id}-{start_dt.strftime('%Y%m%d')}@meetora.ai
+DTSTAMP:{now_str}
+DTSTART:{start_dt.strftime(fmt)}
+DTEND:{end_dt.strftime(fmt)}
+SUMMARY:{meeting.title}
+DESCRIPTION:Meetora Live Meeting\\nJoin link: http://localhost:8443/#live/{meeting.id}\\nMeeting Code: {meeting.meeting_code or f'meet-{meeting.id}'}
+LOCATION:http://localhost:8443/#live/{meeting.id}
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR"""
+
+    safe_title = "".join([c if c.isalnum() else "_" for c in meeting.title.lower()][:30])
+    return Response(
+        content=ics_content.strip(),
+        media_type="text/calendar",
+        headers={"Content-Disposition": f'attachment; filename="meetora_{safe_title}.ics"'}
+    )
 

@@ -39,6 +39,8 @@ def extract_decisions(transcript_items: List[Dict[str, Any]]) -> List[Dict[str, 
                 "rationale": "Aligned by cross-functional meeting consensus.",
                 "confidence_score": pred["confidence"],
                 "status": "approved",
+                "start_time_sec": item.get("start_time") if item.get("start_time") is not None else item.get("start"),
+                "source_segment_id": item.get("id"),
             })
 
     return decisions
