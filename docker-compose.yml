@@ -45,6 +45,39 @@ services:
     volumes:
       - minio_data:/data
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: meetora-backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://meetora:meetora123@postgres:5432/meetora_db
+      REDIS_URL: redis://redis:6379/0
+      LIVEKIT_URL: ${LIVEKIT_URL:-wss://meeting-analyzer-q8ttw70p.livekit.cloud}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-APIopUuPWKCqTmn}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-ZZI3iY2Aa2mj0i0yHN9E2TKGUIiZtiYPyZNChf7fZpW}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/uploads:/app/uploads
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: meetora-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
 volumes:
   postgres_data:
   redis_data:
