@@ -780,6 +780,116 @@ div[style*="position: fixed"][style*="inset: 0"] > div {
   }
 }
 
+/* Landing page layout and navigation across smaller screens */
+.mobile-menu-toggle,
+.mobile-nav-panel { display: none; }
+.landing .topnav { min-width: 0; }
+.landing .navlinks { align-items: center; gap: clamp(18px, 2.4vw, 35px); }
+.landing .navlinks a,
+.landing .nav-link-btn { white-space: nowrap; }
+.dark .mobile-menu-toggle { background: #191629; border-color: #30294b; color: #e8e4f3; }
+.dark .mobile-nav-panel { background: #191629; border-color: #30294b; box-shadow: 0 18px 45px #0006; }
+.dark .mobile-nav-panel button,
+.dark .mobile-nav-panel a { color: #d5d0e2; }
+.dark .mobile-nav-panel button:hover,
+.dark .mobile-nav-panel a:hover { background: #24203a; }
+.dark .mobile-nav-panel .mobile-nav-cta { background: #6652ce; color: white; }
+.hero { padding-inline: clamp(18px, 4vw, 40px); }
+.hero h1 { max-width: 900px; margin-inline: auto; }
+.hero-visual { width: min(100%, 920px); }
+.meeting-card { min-width: 0; }
+.tags { flex-wrap: wrap; }
+.section-copy h2 { text-wrap: balance; }
+.workflow { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(36px, 7vw, 95px); }
+.transcript-card { min-width: 0; }
+.site-footer { padding-inline: max(25px, calc((100vw - 1120px)/2)); }
+
+@media (max-width: 900px) {
+  .landing .topnav { height: 70px; padding-inline: 24px; }
+  .landing .navlinks { display: none; }
+  .landing .nav-actions { margin-left: auto; margin-right: 12px; gap: 12px; }
+  .mobile-menu-toggle { display: flex; width: 40px; height: 40px; flex: none; flex-direction: column; justify-content: center; align-items: center; gap: 5px; border: 1px solid #e6e2ec; border-radius: 10px; background: white; color: #393548; }
+  .mobile-menu-toggle span { width: 17px; height: 2px; border-radius: 2px; background: currentColor; transition: transform .2s, opacity .2s; }
+  .mobile-menu-toggle.is-open span:first-child { transform: translateY(7px) rotate(45deg); }
+  .mobile-menu-toggle.is-open span:nth-child(2) { opacity: 0; }
+  .mobile-menu-toggle.is-open span:last-child { transform: translateY(-7px) rotate(-45deg); }
+  .mobile-nav-panel { position: absolute; display: grid; gap: 4px; top: calc(100% - 1px); left: 16px; right: 16px; z-index: 20; padding: 12px; border: 1px solid #e8e4ee; border-radius: 15px; background: #fff; box-shadow: 0 18px 45px #28203b1c; }
+  .mobile-nav-panel button, .mobile-nav-panel a { display: flex; align-items: center; width: 100%; min-height: 44px; padding: 0 12px; border-radius: 9px; color: #514d5c; background: transparent; text-decoration: none; text-align: left; font-size: 14px; }
+  .mobile-nav-panel button:hover, .mobile-nav-panel a:hover { background: #f6f3fc; }
+  .mobile-nav-panel .mobile-nav-cta { justify-content: space-between; margin-top: 5px; background: #6652ce; color: white; font-weight: 600; }
+  .hero { padding: 64px 24px 82px; }
+  .hero-visual { margin-top: 58px; }
+  .feature-section { padding: 86px 28px 92px; }
+  .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .workflow { padding: 10px 28px 100px; }
+  .workflow-copy>h2 { font-size: clamp(34px, 5vw, 40px); }
+  .final-cta { margin-inline: 20px; }
+}
+
+@media (max-width: 620px) {
+  .landing .topnav { height: 64px; padding-inline: 16px; }
+  .landing .nav-actions { gap: 8px; margin-right: 9px; }
+  .landing .nav-actions .theme-toggle-btn { width: 34px; height: 34px; }
+  .landing .nav-actions .text-btn { padding-inline: 5px; }
+  .landing .nav-actions .button.small { display: none; }
+  .mobile-menu-toggle { width: 36px; height: 36px; }
+  .mobile-nav-panel { left: 10px; right: 10px; }
+  .hero { padding: 48px 18px 66px; }
+  .eyebrow { max-width: 100%; font-size: 10px; }
+  .hero h1 { margin-top: 20px; font-size: clamp(36px, 10vw, 46px); line-height: 1.08; letter-spacing: -2.1px; }
+  .hero h1 br { display: none; }
+  .hero>p { max-width: 440px; font-size: 15px; line-height: 1.65; }
+  .hero-actions { width: 100%; gap: 10px; margin: 24px 0 21px; }
+  .hero-actions .button { width: min(100%, 340px); min-height: 48px; }
+  .demo { min-height: 44px; }
+  .proof { flex-wrap: wrap; gap: 8px; font-size: 11px; }
+  .hero-visual { margin-top: 42px; }
+  .glow { inset: -20px -20px; }
+  .meeting-card { border-radius: 12px; }
+  .mc-head { gap: 10px; padding: 13px; }
+  .mc-head>div { gap: 9px; min-width: 0; }
+  .meeting-icon { width: 34px; height: 34px; flex: none; }
+  .mc-head b { font-size: 11px; }
+  .mc-head small { font-size: 9px; }
+  .status { flex: none; padding: 5px 7px; font-size: 9px; }
+  .summary-col { padding: 18px 16px; }
+  .summary-col h3 { font-size: 14px; }
+  .summary-col p { font-size: 10px; }
+  .tags { gap: 5px; }
+  .tags span { font-size: 8px; }
+  .wave { padding-inline: 12px; gap: 3px; }
+  .wave i:nth-of-type(n+23) { display: none; }
+  .logo-cloud { padding: 46px 22px 4px; }
+  .logo-cloud>div { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 10px; margin: 24px 0 32px; font-size: 15px; }
+  .logo-cloud>div span:last-child { display: inline; }
+  .feature-section { padding: 70px 20px 74px; }
+  .section-copy { margin-bottom: 30px; }
+  .section-copy h2 { font-size: clamp(29px, 8vw, 36px); letter-spacing: -1.2px; }
+  .section-copy h2 br { display: none; }
+  .section-copy p { font-size: 14px; }
+  .feature-grid { grid-template-columns: 1fr; gap: 13px; }
+  .feature-grid article { max-width: none; padding: 22px; }
+  .feature-grid h3 { margin-top: 15px; }
+  .workflow { padding: 8px 20px 78px; gap: 36px; }
+  .workflow-copy>h2 { font-size: clamp(30px, 8vw, 36px); letter-spacing: -1.2px; }
+  .workflow-copy>h2 br { display: none; }
+  .workflow-steps { margin-top: 23px; }
+  .workflow-steps section p { font-size: 11px; }
+  .transcript-card { padding: 14px; border-radius: 13px; }
+  .speaker-line { gap: 8px; padding: 14px 2px; }
+  .speaker-line p { font-size: 10px; }
+  .final-cta { min-height: 350px; margin: 0 12px 58px; border-radius: 16px; }
+  .final-cta>div { padding: 42px 19px; }
+  .final-cta h2 { font-size: clamp(29px, 8vw, 38px); letter-spacing: -1.2px; }
+  .final-cta p { font-size: 14px; line-height: 1.6; }
+  .final-cta .button { min-height: 46px; }
+  .footer-top { padding: 38px 22px 28px; }
+  .footer-brand-col p { max-width: 420px; }
+  .footer-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 18px; }
+  .f-col:last-child { grid-column: 1 / -1; }
+  .footer-bottom { padding: 18px 20px; }
+}
+
 
 /* ==========================================================================
    About & Contact Us Animations (Meetora v2.0)

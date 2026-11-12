@@ -297,11 +297,18 @@ function Header({
 
 }) {
 
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  const navigate = (nextPage: Page) => {
+    setMobileMenuOpen(false)
+    go(nextPage)
+  }
+
   return (
 
     <nav className="topnav">
 
-      <button className="logo-btn" onClick={() => go('home')}>
+      <button className="logo-btn" onClick={() => navigate('home')}>
 
         <Logo dark={theme === 'dark'} />
 
@@ -313,7 +320,7 @@ function Header({
 
           className={`nav-link-btn ${page === 'home' ? 'active' : ''}`}
 
-          onClick={() => go('home')}
+          onClick={() => navigate('home')}
 
         >
 
@@ -343,7 +350,7 @@ function Header({
 
               onClick={() => {
 
-                go('home')
+              navigate('home')
 
                 setTimeout(() => {
 
@@ -365,7 +372,7 @@ function Header({
 
               onClick={() => {
 
-                go('home')
+              navigate('home')
 
                 setTimeout(() => {
 
@@ -389,7 +396,7 @@ function Header({
 
           className={`nav-link-btn ${page === 'about' ? 'active' : ''}`}
 
-          onClick={() => go('about')}
+          onClick={() => navigate('about')}
 
         >
 
@@ -401,7 +408,7 @@ function Header({
 
           className={`nav-link-btn ${page === 'contact' ? 'active' : ''}`}
 
-          onClick={() => go('contact')}
+          onClick={() => navigate('contact')}
 
         >
 
@@ -430,21 +437,50 @@ function Header({
         </button>
         <button className="text-btn" onClick={() => {
           authService.clearSession()
-          go('login')
+          navigate('login')
         }}>
           Sign in
         </button>
         {authService.isAuthenticated() ? (
-          <button className="button small" onClick={() => go('dashboard')}>
+          <button className="button small" onClick={() => navigate('dashboard')}>
             Dashboard <Icon name="arrow" size={16} />
           </button>
         ) : (
-          <button className="button small" onClick={() => go('register')}>
+          <button className="button small" onClick={() => navigate('register')}>
             Get started <Icon name="arrow" size={16} />
           </button>
         )}
 
       </div>
+
+      <button
+        className={`mobile-menu-toggle ${mobileMenuOpen ? 'is-open' : ''}`}
+        type="button"
+        aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+        aria-expanded={mobileMenuOpen}
+        onClick={() => setMobileMenuOpen((open) => !open)}
+      >
+        <span /><span /><span />
+      </button>
+
+      {mobileMenuOpen && <div className="mobile-nav-panel">
+        <button onClick={() => navigate('home')}>Home</button>
+        <button onClick={() => {
+          if (page !== 'home') navigate('home')
+          setMobileMenuOpen(false)
+          setTimeout(() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }), 50)
+        }}>Features</button>
+        <button onClick={() => {
+          if (page !== 'home') navigate('home')
+          setMobileMenuOpen(false)
+          setTimeout(() => document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' }), 50)
+        }}>How it works</button>
+        <button onClick={() => navigate('about')}>About us</button>
+        <button onClick={() => navigate('contact')}>Contact us</button>
+        <button className="mobile-nav-cta" onClick={() => navigate(authService.isAuthenticated() ? 'dashboard' : 'register')}>
+          {authService.isAuthenticated() ? 'Dashboard' : 'Get started'} <Icon name="arrow" size={16} />
+        </button>
+      </div>}
 
     </nav>
 
